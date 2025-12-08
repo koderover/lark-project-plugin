@@ -55,7 +55,7 @@ Zadig DevOps 飞书项目插件允许在飞书项目触发 Zadig 工作流，自
 
 ### 开启 HTTPS 和 CORS
 
-Zadig 需要绑定域名并开启 HTTPS，并且针对`/api/plugin`的 path 需要开启跨于访问 CORS。
+Zadig 需要绑定域名并开启 HTTPS，并且针对`/api/plugin`的 path 需要开启跨域访问 CORS。
 
 以下是 Ingress 的配置示例，其他网关请自行配置。
 

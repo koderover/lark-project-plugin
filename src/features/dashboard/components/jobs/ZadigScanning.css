@@ -1,0 +1,113 @@
+.job-zadig-scanning {
+  padding: 0;
+
+  .workflow-scanning-rows {
+    width: 100%;
+
+    .semi-table {
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .semi-table-thead th {
+      vertical-align: middle !important;
+      padding: 16px 12px !important;
+      background: #fafbfc !important;
+      font-weight: 600;
+      color: #1d2129;
+      border-bottom: 1px solid #e5e6eb;
+    }
+
+    .semi-table-tbody td {
+      vertical-align: middle !important;
+      padding: 16px 12px !important;
+      border-bottom: 1px solid #f2f3f5;
+    }
+
+    .semi-table-tbody tr:hover td {
+      background: #f8f9fa !important;
+    }
+
+    /* Variable table styles */
+    .variable-table {
+      width: auto;
+      margin: 12px;
+      background: #f8f9fa;
+      border: 1px solid #e5e6eb;
+      border-radius: 6px;
+      overflow: hidden;
+
+      .semi-table-thead th {
+        background: #f8f9fa !important;
+        padding: 12px 16px !important;
+        font-weight: 600;
+        color: #1d2129;
+        border-bottom: 1px solid #e5e6eb;
+      }
+
+      .semi-table-tbody td {
+        background: #f8f9fa !important;
+        padding: 12px 16px !important;
+        border-bottom: 1px solid #f2f3f5;
+      }
+    }
+
+    /* Build row styles */
+    .build-row {
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    .repo-name-container {
+      display: flex;
+      align-items: center;
+      min-height: 36px;
+      width: 100%;
+      padding: 4px 8px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      border: 1px solid #e5e6eb;
+    }
+
+    .repo-name {
+      max-width: 100%;
+      overflow: hidden;
+      line-height: 32px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-weight: 500;
+      color: #1d2129;
+    }
+
+    .repo-warning {
+      color: #ff4d4f;
+      cursor: pointer;
+      vertical-align: middle;
+      font-size: 16px;
+    }
+
+    /* Select styles */
+    .semi-select {
+      width: 100%;
+    }
+
+    /* Select option group styles */
+    .semi-select-option-group {
+      font-weight: 600;
+      color: #999;
+      font-size: 12px;
+    }
+
+    /* Password input styles */
+    .password .semi-input-suffix {
+      display: none !important;
+    }
+  }
+}

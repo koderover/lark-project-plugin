@@ -1,0 +1,64 @@
+.job-sql {
+  color: #606266;
+  font-size: 14px;
+}
+
+.sql-editor {
+  height: 100%;
+}
+
+.sql-editor .resize {
+  padding: 0;
+}
+
+.sql-editor .resize .react-codemirror {
+  height: 100%;
+}
+
+.sql-editor .resize .react-codemirror .cm-editor {
+  height: 100%;
+}
+
+.errors-container {
+  position: relative;
+  margin-bottom: 0;
+  background-color: #eb5848;
+}
+
+.errors-list {
+  max-height: 120px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+  background-color: #eb5848;
+  transition: max-height 200ms ease-out;
+}
+
+.errors-list.success-list {
+  background-color: #67c23a;
+}
+
+.errors-list-item {
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  color: #fff;
+  font-size: 12px;
+  line-height: 20px;
+  background-color: #eb5848;
+}
+
+.errors-list-item.success-list-item {
+  background-color: #67c23a;
+}
+
+.errors-list-item-counter {
+  margin-right: 5px;
+}
+
+.errors-list-item-text {
+  max-width: 100%;
+  padding: 0;
+  white-space: nowrap;
+}

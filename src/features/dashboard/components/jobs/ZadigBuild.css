@@ -1,0 +1,80 @@
+.job-zadig-build {
+  .workflow-build-rows {
+    .semi-table {
+      background: transparent;
+    }
+    .semi-select{
+      width: 100%;
+    }
+    .semi-table-thead {
+      background: #f5f5f5;
+    }
+
+    .semi-table-tbody {
+      .semi-table-row {
+        cursor: pointer;
+        transition: background-color 0.2s;
+
+        &:hover {
+          background-color: #fafafa;
+        }
+      }
+    }
+
+    /* Variable table styles */
+    .semi-table.variable-table {
+      width: auto;
+      margin: 5px;
+      background: #f8fcfd;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+
+      .semi-table-thead {
+        background: #f8fcfd;
+      }
+
+      .semi-table-tbody {
+        .semi-table-row {
+          background: #f8fcfd;
+        }
+      }
+    }
+
+    /* Build row styles */
+    .build-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+
+    .repo-name-container {
+      display: flex;
+      align-items: center;
+    }
+
+    .repo-name {
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .repo-warning {
+      color: #ff7875;
+      margin-left: 8px;
+    }
+
+    /* Select option group styles */
+    .semi-select-option-group {
+      font-weight: 600;
+      color: #999;
+      font-size: 12px;
+    }
+
+    /* Password input styles */
+    .password .semi-input-suffix {
+      display: none !important;
+    }
+  }
+}

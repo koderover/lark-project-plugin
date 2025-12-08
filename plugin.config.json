@@ -1,0 +1,15 @@
+{
+  "siteDomain": "https://project.feishu.cn",
+  "pluginId": "", 
+  "pluginSecret": "", 
+  "resources": [
+    {
+      "id": "zadig-dashboard",
+      "entry": "./src/features/dashboard/index.tsx"
+    },
+    {
+      "id": "zadig-config",
+      "entry": "./src/features/config/index.tsx"
+    }
+  ]
+}

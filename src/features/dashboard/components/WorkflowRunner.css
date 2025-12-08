@@ -1,0 +1,165 @@
+.workflow-runner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100vh;
+}
+
+.workflow-runner.full-height {
+  max-height: 100%;
+}
+
+.workflow-runner .font-gray {
+  color: #c0c4cc;
+}
+
+.workflow-runner .header {
+  flex-shrink: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.workflow-runner .header .running-jobs-selection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0px 16px 0px 26px;
+}
+
+.workflow-runner .header .running-jobs-selection .content-section {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.workflow-runner .header .running-jobs-selection .content-section .dialog-title {
+  display: inline-flex;
+  flex-basis: 90px;
+  margin-right: 5px;
+  color: #303133;
+  font-weight: 400;
+  font-size: 16px;
+}
+
+.workflow-runner .header .running-jobs-selection .content-section .tag-list {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.workflow-runner .header .running-jobs-selection .content-section .tag-list .run-tag {
+  height: auto;
+  margin-left: 10px;
+  padding: 6px 12px;
+  color: #aaa;
+  font-size: 13px;
+  line-height: 1;
+  background: #fff;
+  border-color: #aaa;
+  border-radius: 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.workflow-runner .header .running-jobs-selection .content-section .tag-list .run-tag.disabled {
+  cursor: not-allowed;
+}
+
+.workflow-runner .header .running-jobs-selection .content-section .tag-list .run-tag:hover {
+  color: #0066ff;
+  background: #fff;
+  border-color: #0066ff;
+}
+
+.workflow-runner .header .running-jobs-selection .content-section .tag-list .run-tag.selected,
+.workflow-runner .header .running-jobs-selection .content-section .tag-list .run-tag.selected:hover {
+  color: #fff;
+  background: #0066ff;
+  border-color: #0066ff;
+}
+
+.workflow-runner .header .running-jobs-selection .close-button {
+  flex-shrink: 0;
+  color: #8a8e99;
+  cursor: pointer;
+}
+
+.workflow-runner .header .running-jobs-selection .close-button:hover {
+  color: #606266;
+  background-color: #f5f7fa;
+}
+
+.workflow-runner .content {
+  flex: 1;
+  height: 100%;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.workflow-runner .content.no-scroll {
+  overflow: hidden;
+}
+
+/* Semi Design Collapse override */
+.workflow-runner .content .semi-collapse {
+  background-color: #fff;
+  border: none;
+  border-bottom: 0;
+  border-radius: 8px;
+}
+
+.workflow-runner .content .semi-collapse .semi-collapse-item .semi-collapse-header {
+  padding: 10px 25px;
+  font-weight: 700;
+  font-size: 15px;
+  background: transparent;
+}
+
+.workflow-runner .content .semi-collapse .semi-collapse-item .semi-collapse-header:hover {
+  background: #efefef;
+}
+
+.workflow-runner .content .semi-collapse .semi-collapse-item .semi-collapse-content {
+  padding-right: 8px;
+  padding-bottom: 4px;
+  padding-left: 33px;
+}
+
+.workflow-runner .content .job-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.workflow-runner .content .job-header .name {
+  color: #303133;
+  font-size: 15px;
+}
+
+.workflow-runner .content .job-header .tip {
+  margin-left: 10px;
+  color: #909399;
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.workflow-runner .content .job-header .tip .ref-job-name {
+  color: #ff1949;
+}
+
+/* Workflow Runner Modal specific styles */
+.workflow-runner-modal .semi-modal-body {
+  padding: 0;
+}
+
+.workflow-runner-modal.full-height .semi-modal-body {
+  overflow: hidden;
+}
+.workflow-runner-modal .semi-form-section {
+  margin-top: 0;
+}
+.workflow-runner-modal .semi-form-vertical .semi-form-field {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}

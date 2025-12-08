@@ -1,0 +1,326 @@
+/* Modal对话框中的配置选择列表样式 */
+.nacos-compare-modal .config-list {
+  display: flex;
+  align-items: center;
+}
+
+.nacos-compare-modal .config-list .arrow {
+  margin: 0 10px;
+  font-size: 18px;
+}
+
+.nacos-compare-modal .config-list .old-file-name {
+  color: #606266;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.nacos-compare-modal .compare-container .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nacos-compare-modal .compare-container .header .right {
+  display: flex;
+}
+
+.nacos-compare-modal .compare-container .header .right .operation {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-right: 10px;
+}
+
+.nacos-compare-modal .compare-container .header .right .operation > * {
+  flex-shrink: 0;
+}
+
+.nacos-compare-modal .compare-container .content .code-diff-view {
+  margin: 5px 0;
+}
+
+/* 主要工作流组件样式 */
+.workflow-nacos-rows {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.workflow-nacos-rows .font-gray {
+  color: #8a8e99;
+}
+
+/* Nacos配置区域 */
+.workflow-nacos-rows .nacos-config-section {
+  margin-top: 16px;
+}
+
+.workflow-nacos-rows .config-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.workflow-nacos-rows .config-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.workflow-nacos-rows .config-count {
+  font-size: 12px;
+  color: #8a8e99;
+  background: #f5f5f5;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* 主界面配置列表 */
+.workflow-nacos-rows .nacos-config-section .config-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 单个配置项 */
+.workflow-nacos-rows .config-item {
+  border: 1px solid #e5e6ea;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.workflow-nacos-rows .config-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: #d4d4d8;
+}
+
+/* 配置项头部 */
+.workflow-nacos-rows .config-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  background: #fafafa;
+  border-radius: 8px 8px 0 0;
+}
+
+.workflow-nacos-rows .config-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.workflow-nacos-rows .config-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+}
+
+.workflow-nacos-rows .config-meta {
+  font-size: 12px;
+  color: #8a8e99;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workflow-nacos-rows .config-format {
+  background: #e6f4ff;
+  color: #1890ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  margin-left: 8px;
+}
+
+.workflow-nacos-rows .config-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 编辑器容器 */
+.workflow-nacos-rows .config-editor-container {
+  height: 400px;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+/* 面板样式 */
+.workflow-nacos-rows .editor-panel,
+.workflow-nacos-rows .diff-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
+}
+
+/* 面板头部 */
+.workflow-nacos-rows .panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  font-size: 12px;
+  font-weight: 500;
+  color: #495057;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.workflow-nacos-rows .panel-title {
+  color: #495057;
+}
+
+.workflow-nacos-rows .diff-count {
+  background: #fff3cd;
+  color: #856404;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+/* 编辑器包装器 */
+.workflow-nacos-rows .editor-wrapper {
+  flex: 1;
+  overflow: hidden;
+  background: #282a36;
+}
+
+.workflow-nacos-rows .editor-wrapper .cm-editor {
+  height: 100%;
+}
+
+.workflow-nacos-rows .editor-wrapper .cm-scroller {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* 差异内容 */
+.workflow-nacos-rows .diff-content {
+  flex: 1;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+.workflow-nacos-rows .diff-pre {
+  margin: 0;
+  padding: 8px 0;
+  height: 100%;
+  overflow: auto;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  background: #1e1e1e;
+  color: #d4d4d4;
+}
+
+.workflow-nacos-rows .diff-line {
+  padding: 0 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.workflow-nacos-rows .diff-line.added {
+  background-color: rgba(46, 160, 67, 0.15);
+  border-left: 3px solid #2ea043;
+}
+
+.workflow-nacos-rows .diff-line.removed {
+  background-color: rgba(248, 81, 73, 0.15);
+  border-left: 3px solid #f85149;
+}
+
+.workflow-nacos-rows .diff-line.added .diff-text {
+  color: #aff5b4;
+}
+
+.workflow-nacos-rows .diff-line.removed .diff-text {
+  color: #ffdcd7;
+}
+
+.workflow-nacos-rows .diff-text {
+  display: inline-block;
+  line-height: inherit;
+}
+
+.workflow-nacos-rows .no-changes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #8a8e99;
+  font-size: 13px;
+}
+
+/* 调整手柄 */
+.workflow-nacos-rows .resize-handle {
+  background: #f1f3f4;
+  transition: background-color 0.2s ease;
+  position: relative;
+  width: 4px !important;
+}
+
+.workflow-nacos-rows .resize-handle:hover {
+  background: #dadce0;
+}
+
+.workflow-nacos-rows .resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 24px;
+  background: #9aa0a6;
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.workflow-nacos-rows .resize-handle:hover::after {
+  opacity: 1;
+}
+
+/* 面板组样式 */
+.workflow-nacos-rows .config-editor-container [data-panel-group] {
+  height: 100%;
+}
+
+.workflow-nacos-rows .config-editor-container [data-panel] {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .workflow-nacos-rows .config-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .workflow-nacos-rows .config-editor-container {
+    height: 300px;
+  }
+  
+  .workflow-nacos-rows .editor-wrapper .cm-scroller {
+    font-size: 11px;
+  }
+  
+  .workflow-nacos-rows .diff-pre {
+    font-size: 11px;
+  }
+}

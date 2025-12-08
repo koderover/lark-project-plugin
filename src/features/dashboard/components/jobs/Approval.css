@@ -1,0 +1,337 @@
+/* Approval Component Styles - based on Vue version */
+
+.job-approval {
+  box-sizing: border-box;
+  color: #606266;
+  font-size: 14px;
+}
+
+.job-approval .user-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.job-approval .user-list .user-detail {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.job-approval .user-name-circle {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 8px;
+  font-size: 12px;
+  line-height: 1;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  margin-right: 8px;
+}
+
+.job-approval .user-name-circle + .user-name-circle {
+  margin-left: 8px;
+}
+
+/* Approval flow content */
+.job-approval .approval-flow-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding-left: 15px;
+  margin-bottom: 16px;
+}
+
+.job-approval .approval-flow-content::before {
+  position: absolute;
+  top: 0;
+  bottom: -16px;
+  left: 0;
+  border: 1px dashed #ccc;
+  content: "";
+}
+
+.job-approval .approval-flow-content:first-child::before {
+  top: 16px;
+}
+
+.job-approval .approval-flow-content:last-child::before {
+  height: 0%;
+}
+
+.job-approval .approval-flow-content::after {
+  position: absolute;
+  top: 16px;
+  left: -2px;
+  width: 6px;
+  height: 6px;
+  background-color: #0077fa;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  content: "";
+}
+
+.job-approval .approval-flow-content:hover .approval-flow-detail {
+  background: #f8fcfd;
+  border: 1px solid #ddd;
+}
+
+.job-approval .approval-flow-content:hover .approval-flow-operation {
+  visibility: visible;
+}
+
+.job-approval .approval-flow-detail {
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  flex: 1;
+}
+
+.job-approval .approval-flow-detail .users {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.job-approval .approval-flow-detail .requirements span {
+  font-size: 13px;
+}
+
+.job-approval .approval-flow-operation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 10px;
+  visibility: hidden;
+  gap: 10px;
+}
+
+.job-approval .add-first-approval-flow {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Modal Styles */
+.approval-users-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding: 0 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.approval-users-container .left {
+  width: 50%;
+  padding: 16px 0;
+  border-right: 1px solid #ddd;
+}
+
+.approval-users-container .right {
+  width: 48%;
+  padding: 16px 0;
+}
+
+.approval-users-container .breadcrumb {
+  width: 90%;
+  margin: 16px 0;
+  padding: 4px 0;
+  font-weight: 700;
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+}
+
+.approval-users-container .dep {
+  display: flex;
+  justify-content: space-between;
+  width: 90%;
+  margin: 12px 0;
+  cursor: pointer;
+}
+
+.approval-users-container .dep:hover {
+  font-weight: 600;
+}
+
+.approval-users-container .user {
+  display: flex;
+  align-items: center;
+  margin: 10px 0;
+  cursor: pointer;
+}
+
+.approval-users-container .user .user-info-container {
+  display: flex;
+  align-items: center;
+}
+
+.approval-users-container .user .user-avatar {
+  width: 24px;
+  height: 24px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
+.approval-users-container .user .user-avatar-placeholder {
+  margin-right: 6px;
+  font-size: 24px;
+  vertical-align: middle;
+}
+
+.approval-users-container .user .name {
+  margin-left: 6px;
+}
+
+.approval-users-container .user-list-item {
+  margin: 10px 0;
+}
+
+.approval-users-container .selected-user-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.approval-users-container .selected-user-info {
+  display: flex;
+  align-items: center;
+}
+
+.approval-users-container .selected-user-info .user-avatar {
+  width: 24px;
+  height: 24px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
+.approval-users-container .selected-user-info .user-avatar-placeholder {
+  font-size: 24px;
+}
+
+.approval-users-container .selected-user-info .name {
+  margin-left: 10px;
+}
+
+.approval-users-container .delete-user {
+  color: #ff1949;
+  cursor: pointer;
+}
+
+.approval-users-container .users-tree {
+  width: 100%;
+}
+
+/* Groups container */
+.approval-groups-container {
+  margin-top: 10px;
+}
+
+.approval-groups-container-detail {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.approval-groups-container-detail .search-group-input {
+  width: 100%;
+}
+
+.approval-groups-container-detail .user {
+  display: flex;
+  align-items: center;
+  margin: 6px 0;
+  cursor: pointer;
+}
+
+.approval-groups-container-detail .user .user-info-container {
+  display: flex;
+  align-items: center;
+}
+
+.approval-groups-container-detail .user .user-info-container .name {
+  margin-left: 6px;
+  font-size: 14px;
+}
+
+.approval-groups-container-detail .user .user-info-container .member-count {
+  margin-left: 6px;
+  color: #999;
+  font-size: 12px;
+}
+
+.approval-groups-container-detail .user .user-info-container .department-count {
+  margin-left: 6px;
+  color: #999;
+  font-size: 12px;
+}
+
+.approval-groups-container-detail .user .user-info-container .description {
+  margin-left: 6px;
+  color: #999;
+  font-size: 12px;
+}
+
+/* Node type selection */
+.approval-node-type {
+  margin-bottom: 16px;
+}
+
+.approval-node-type .semi-radio-group {
+  display: flex;
+  gap: 16px;
+}
+
+/* Form item styles */
+.job-approval .form-item {
+  margin-bottom: 16px;
+}
+
+.job-approval .form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #606266;
+  font-size: 14px;
+}
+
+/* Override semi-ui styles if needed */
+.job-approval .semi-button + .semi-button {
+  margin-left: 8px;
+}
+
+.job-approval .semi-select {
+  min-width: 150px;
+}
+
+/* Tree styles for WeChat department */
+.approval-users-container .users-tree .semi-tree-node-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.approval-users-container .users-tree .semi-icon {
+  margin-right: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .approval-users-container {
+    flex-direction: column;
+  }
+  
+  .approval-users-container .left,
+  .approval-users-container .right {
+    width: 100%;
+    border-right: none;
+  }
+  
+  .approval-users-container .left {
+    border-bottom: 1px solid #ddd;
+  }
+}

@@ -124,7 +124,6 @@ async function refreshToken(): Promise<boolean> {
         console.error('Auth config not found for token refresh');
         return false;
       }
-
       // 验证配置是否有效
       const isValidConfig = await validateConfig();
       if (!isValidConfig) {
@@ -134,7 +133,6 @@ async function refreshToken(): Promise<boolean> {
 
       // 获取飞书授权码
       const authResult = await sdk.utils.getAuthCode();
-
       // 使用授权码获取新的访问令牌
       const success = await getToken(authResult.code);
 

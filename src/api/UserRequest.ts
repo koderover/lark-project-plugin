@@ -48,21 +48,15 @@ const isGlobalConfigAPI = (url: string): boolean => {
   return url.includes('/api/plugin/lark/auth/config');
 };
 
-// 判断是否需要插件认证的 API（排除获取 Token 的 API）
+// 判断是否需要插件认证的 API（排除获取 Token 的 API 和测试连接 API，避免循环调用）
 const needsPluginAuth = (url: string): boolean => {
-  // 全局配置 API 不需要插件认证
-  if (url.includes('/api/plugin/lark/auth/config')) {
-    return false;
-  }
-  // 获取用户密钥 API 不需要插件认证（这是获取 Token 的 API）
-  if (url.includes('/api/plugin/lark/user/key')) {
-    return false;
-  }
-  // 测试连接 API 不需要插件认证
-  if (url.includes('/api/plugin/lark/test')) {
-    return false;
-  }
-  return true;
+  const excludedUrls = [
+    '/api/plugin/lark/auth/config',       // 全局配置 API
+    '/api/plugin/plugin/lark/login',      // 获取用户密钥/登录 API
+    '/api/plugin/v1/policy/permission',   // 测试连接 API
+  ];
+  
+  return !excludedUrls.some(excluded => url.includes(excluded));
 };
 
 // 请求拦截器

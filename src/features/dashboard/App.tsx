@@ -237,12 +237,14 @@ const App: React.FC = () => {
         const userKeyResponse = await getUserKeyAPI(keyPayload);
 
         // 3. 使用 authUtils 统一保存认证数据
+        // token_expire_time 是倒计时秒数，需要转换为实际的过期时间戳（毫秒）并缩短 10 分钟
+        const now = Date.now();
         const pluginAuthData = {
           user_key: userKeyResponse.user_key,
           plugin_access_token: userKeyResponse.plugin_access_token,
-          plugin_access_token_expire_time: userKeyResponse.plugin_access_token_expire_time,
+          plugin_access_token_expire_time: now + userKeyResponse.plugin_access_token_expire_time * 1000 - 600 * 1000,
           user_access_token: userKeyResponse.user_access_token,
-          user_access_token_expire_time: userKeyResponse.user_access_token_expire_time,
+          user_access_token_expire_time: now + userKeyResponse.user_access_token_expire_time * 1000 - 600 * 1000,
         };
 
         await setAuthDataAfterLogin({
@@ -273,7 +275,7 @@ const App: React.FC = () => {
 
     const values = authFormApi.getValues();
     if (!values.apiToken) {
-      Toast.warning('请先填写API Token');
+      Toast.warning('请先填写 API Token');
       return;
     }
 

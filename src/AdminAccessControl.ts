@@ -32,12 +32,14 @@ async function getToken(code: string): Promise<boolean> {
     };
     const userKeyResponse = await getAdminUserKeyAPI(keyPayload);
 
+    // token_expire_time 是倒计时秒数，需要转换为实际的过期时间戳（毫秒）并缩短 10 分钟
+    const now = Date.now();
     const localAuthData: LocalAuthData = {
       user_key: userKeyResponse.user_key,
       plugin_access_token: userKeyResponse.plugin_access_token,
-      plugin_access_token_expire_time: userKeyResponse.plugin_access_token_expire_time,
+      plugin_access_token_expire_time: now + userKeyResponse.plugin_access_token_expire_time * 1000 - 600 * 1000,
       user_access_token: userKeyResponse.user_access_token,
-      user_access_token_expire_time: userKeyResponse.user_access_token_expire_time
+      user_access_token_expire_time: now + userKeyResponse.user_access_token_expire_time * 1000 - 600 * 1000
     };
     await sdk.storage.setItem('plugin-admin-local-auth', JSON.stringify(localAuthData));
 
@@ -50,12 +52,12 @@ async function getToken(code: string): Promise<boolean> {
 
 /**
  * 检查Token是否即将过期（提前5分钟刷新）
- * @param expireTime Token过期时间（秒）
+ * @param expireTime Token过期时间戳（毫秒）
  * @returns 是否即将过期
  */
 function isTokenExpiringSoon(expireTime: number): boolean {
   const fiveMinutesInMs = 5 * 60 * 1000; // 5分钟
-  return (expireTime * 1000 - Date.now()) < fiveMinutesInMs;
+  return (expireTime - Date.now()) < fiveMinutesInMs;
 }
 
 /**
@@ -78,9 +80,9 @@ async function checkLogin(checkExpiringSoon: boolean = false): Promise<boolean> 
       return false;
     }
 
-    // 检查是否已过期
-    const pluginTokenExpired = plugin_access_token_expire_time * 1000 <= Date.now();
-    const userTokenExpired = user_access_token_expire_time * 1000 <= Date.now();
+    // 检查是否已过期（expire_time 已经是毫秒级时间戳）
+    const pluginTokenExpired = plugin_access_token_expire_time <= Date.now();
+    const userTokenExpired = user_access_token_expire_time <= Date.now();
     
     if (pluginTokenExpired || userTokenExpired) {
       return false;
@@ -140,7 +142,7 @@ async function refreshToken(): Promise<boolean> {
       if (success) {
         return true;
       } else {
-        console.error('Token刷新失败');
+        console.error('Token refresh failed');
         return false;
       }
     } catch (error) {

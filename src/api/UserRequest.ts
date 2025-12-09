@@ -1,7 +1,7 @@
 import { Toast } from '@douyinfe/semi-ui';
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import type { AuthConfig } from './types';
-import { getStoredToken, refreshTokenManually } from '../UserAccessControl';
+import { getStoredToken, refreshTokenManually, checkLoginStatus } from '../UserAccessControl';
 import { authStore } from '../stores/AuthStore';
 
 // 创建 axios 实例
@@ -48,11 +48,30 @@ const isGlobalConfigAPI = (url: string): boolean => {
   return url.includes('/api/plugin/lark/auth/config');
 };
 
+// 判断是否需要插件认证的 API（排除获取 Token 的 API）
+const needsPluginAuth = (url: string): boolean => {
+  // 全局配置 API 不需要插件认证
+  if (url.includes('/api/plugin/lark/auth/config')) {
+    return false;
+  }
+  // 获取用户密钥 API 不需要插件认证（这是获取 Token 的 API）
+  if (url.includes('/api/plugin/lark/user/key')) {
+    return false;
+  }
+  // 测试连接 API 不需要插件认证
+  if (url.includes('/api/plugin/lark/test')) {
+    return false;
+  }
+  return true;
+};
+
 // 请求拦截器
 request.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     const authConfig = await getAuthConfig();
     const isGlobalAPI = config.url ? isGlobalConfigAPI(config.url) : false;
+    const requiresPluginAuth = config.url ? needsPluginAuth(config.url) : false;
+
     if (authConfig) {
       // 设置 base URL
       if (config.url && !config.url.startsWith('http')) {
@@ -68,6 +87,20 @@ request.interceptors.request.use(
         // 其他所有 API，使用完整的鉴权信息
         if (authConfig.apiToken) {
           config.headers.set('Authorization', `Bearer ${authConfig.apiToken}`);
+        }
+
+        // 需要插件认证的 API，先确保 Token 有效
+        if (requiresPluginAuth) {
+          // 检查 Token 是否过期，如果过期则先刷新
+          const isLoggedIn = await checkLoginStatus();
+          if (!isLoggedIn) {
+            // Token 已过期，尝试刷新
+            const refreshSuccess = await refreshTokenManually();
+            if (!refreshSuccess) {
+              console.warn('Token refresh failed in request interceptor');
+              // 刷新失败，继续请求，让响应拦截器处理 401 错误
+            }
+          }
         }
 
         // 添加插件特有的认证头

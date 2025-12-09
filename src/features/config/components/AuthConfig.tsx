@@ -54,12 +54,14 @@ const AuthConfig: React.FC<AuthConfigProps> = ({ onSave, onTest, onError }) => {
         const userKeyResponse = await getAdminUserKeyAPI(keyPayload);
         
         // 4. 使用 authUtils 保存管理员插件认证数据
+        // token_expire_time 是倒计时秒数，需要转换为实际的过期时间戳（毫秒）并缩短 10 分钟
+        const now = Date.now();
         const pluginAuthData = {
           user_key: userKeyResponse.user_key,
           plugin_access_token: userKeyResponse.plugin_access_token,
-          plugin_access_token_expire_time: userKeyResponse.plugin_access_token_expire_time,
+          plugin_access_token_expire_time: now + userKeyResponse.plugin_access_token_expire_time * 1000 - 600 * 1000,
           user_access_token: userKeyResponse.user_access_token,
-          user_access_token_expire_time: userKeyResponse.user_access_token_expire_time
+          user_access_token_expire_time: now + userKeyResponse.user_access_token_expire_time * 1000 - 600 * 1000
         };
         
         await setAuthDataAfterLogin({
@@ -159,12 +161,14 @@ const AuthConfig: React.FC<AuthConfigProps> = ({ onSave, onTest, onError }) => {
         const userKeyResponse = await getAdminUserKeyAPI(keyPayload);
         
         // 4. 使用 authUtils 保存管理员插件认证数据
+        // token_expire_time 是倒计时秒数，需要转换为实际的过期时间戳（毫秒）
+        const now = Date.now();
         const pluginAuthData = {
           user_key: userKeyResponse.user_key,
           plugin_access_token: userKeyResponse.plugin_access_token,
-          plugin_access_token_expire_time: userKeyResponse.plugin_access_token_expire_time,
+          plugin_access_token_expire_time: now + userKeyResponse.plugin_access_token_expire_time * 1000,
           user_access_token: userKeyResponse.user_access_token,
-          user_access_token_expire_time: userKeyResponse.user_access_token_expire_time
+          user_access_token_expire_time: now + userKeyResponse.user_access_token_expire_time * 1000
         };
         
         await setAuthDataAfterLogin({

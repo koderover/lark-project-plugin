@@ -51,13 +51,13 @@ async function getToken(code: string): Promise<boolean> {
 }
 
 /**
- * 检查Token是否即将过期（提前5分钟刷新）
+ * 检查Token是否即将过期（提前 120 分钟刷新）
  * @param expireTime Token过期时间戳（毫秒）
  * @returns 是否即将过期
  */
 function isTokenExpiringSoon(expireTime: number): boolean {
-  const fiveMinutesInMs = 5 * 60 * 1000; // 5分钟
-  return (expireTime - Date.now()) < fiveMinutesInMs;
+  const timeLeft = 120 * 60 * 1000; // 120分钟
+  return (expireTime - Date.now()) < timeLeft;
 }
 
 /**

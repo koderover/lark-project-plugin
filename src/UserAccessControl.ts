@@ -51,13 +51,13 @@ async function getToken(code: string): Promise<boolean> {
 }
 
 /**
- * 检查Token是否即将过期（提前5分钟刷新）
+ * 检查Token是否即将过期（提前 120 分钟刷新）
  * @param expireTime Token过期时间戳（毫秒）
  * @returns 是否即将过期
  */
 function isTokenExpiringSoon(expireTime: number): boolean {
-  const fiveMinutesInMs = 5 * 60 * 1000; // 5分钟
-  return (expireTime - Date.now()) < fiveMinutesInMs;
+  const timeLeft = 120 * 60 * 1000; // 120分钟
+  return (expireTime - Date.now()) < timeLeft;
 }
 
 /**
@@ -79,6 +79,8 @@ async function checkLogin(checkExpiringSoon: boolean = false): Promise<boolean> 
     if (!plugin_access_token || !plugin_access_token_expire_time || !user_access_token || !user_access_token_expire_time) {
       return false;
     }
+    console.log(pluginLocalAuth)
+
 
     // 检查是否已过期（expire_time 已经是毫秒级时间戳）
     const pluginTokenExpired = plugin_access_token_expire_time <= Date.now();
@@ -93,6 +95,7 @@ async function checkLogin(checkExpiringSoon: boolean = false): Promise<boolean> 
       const userTokenExpiringSoon = isTokenExpiringSoon(user_access_token_expire_time);
       
       if (pluginTokenExpiringSoon || userTokenExpiringSoon) {
+        console.log('checkExpiringSoon', checkExpiringSoon)
         return false;
       }
     }

@@ -4,6 +4,7 @@
  */
 
 import { getAdminUserKeyAPI, testAdminConnectionAPI } from './api';
+import { authStore } from './stores/AuthStore';
 
 const sdk = window.JSSDK;
 
@@ -42,6 +43,12 @@ async function getToken(code: string): Promise<boolean> {
       user_access_token_expire_time: now + userKeyResponse.user_access_token_expire_time * 1000 - 600 * 1000
     };
     await sdk.storage.setItem('plugin-admin-local-auth', JSON.stringify(localAuthData));
+
+    // 同步更新 authStore 缓存，确保请求拦截器能立即获取到新的 Token
+    await authStore.setPluginAdminAuthData({
+      user_access_token: localAuthData.user_access_token,
+      user_key: localAuthData.user_key
+    });
 
     return true;
   } catch (error) {

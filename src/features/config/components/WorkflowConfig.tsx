@@ -26,6 +26,7 @@ interface WorkflowConfigItem {
   nodes: {
     node_id: string;
     node_name: string;
+    node_pattern: string;
     project_key: string;
     template_id: number;
     template_name: string;
@@ -49,11 +50,13 @@ interface WorkItemType {
 interface WorkItemNode {
   id: string;
   name: string;
+  pattern: string;
 }
 
 interface WorkItemTemplate {
   id: number;
   name: string;
+  pattern: string;
 }
 
 interface Project {
@@ -237,9 +240,11 @@ const WorkflowConfig: React.FC = () => {
                   return {
                     label: template.name,
                     value: String(template.id),
+                    pattern: template.pattern,
                     children: templateNodes.map(tNode => ({
                       label: tNode.name,
                       value: tNode.id,
+                      pattern: tNode.pattern,
                       isLeaf: true
                     }))
                   };
@@ -248,6 +253,7 @@ const WorkflowConfig: React.FC = () => {
                   return {
                     label: template.name,
                     value: String(template.id),
+                    pattern: template.pattern,
                     // 不设置children和isLeaf，让Cascader异步加载来确定是否有子节点
                   };
                 }
@@ -343,7 +349,8 @@ const WorkflowConfig: React.FC = () => {
       const response = await getWorkflowItemNodesAPI(workItemTypeKey, templateId);
       return response?.nodes?.map(node => ({
         id: node.state_key,
-        name: node.name
+        name: node.name,
+        pattern: node.pattern
       })) || [];
     } catch (error) {
       console.error('获取工作项节点失败:', error);
@@ -373,9 +380,11 @@ const WorkflowConfig: React.FC = () => {
   const buildInitialCascaderData = (templates: WorkItemTemplate[]): Array<{
     label: string;
     value: string;
+    pattern: string;
     children?: Array<{
       label: string;
       value: string;
+      pattern: string;
     }>;
     isLeaf?: boolean;
   }> => {
@@ -387,6 +396,7 @@ const WorkflowConfig: React.FC = () => {
     return templates.map(template => ({
       label: template.name,
       value: String(template.id),
+      pattern: template.pattern
       // 不设置children，让Cascader知道这个节点可能有子节点需要异步加载
     }));
   };
@@ -744,6 +754,7 @@ const WorkflowConfig: React.FC = () => {
             const configuredNodes: {
               node_id: string;
               node_name: string;
+              node_pattern: string;
               project_key: string;
               template_id: number;
               template_name: string;
@@ -776,20 +787,26 @@ const WorkflowConfig: React.FC = () => {
               const selectedTemplate = formData.workItemTemplates.find(template => template.id.toString() === templateId);
               
               // 查找节点信息
-              let selectedNode: { label: string; value: string } | undefined = undefined;
+              let selectedNode: { label: string; value: string; pattern: string } | undefined = undefined;
               let nodeName = '';
+              let nodePattern = '';
               
               if (selectedTemplate) {
                 if (templateNodeValue.length === 1) {
                   // 对于叶子节点，使用模板名作为节点名
-                  selectedNode = { label: selectedTemplate.name, value: templateId };
+                  selectedNode = { label: selectedTemplate.name, value: templateId, pattern: selectedTemplate.pattern };
+                  console.log(selectedNode);
                   nodeName = selectedTemplate.name;
+                  nodePattern = selectedTemplate.pattern;
                 } else {
                   // 从级联数据中查找节点信息
                   const templateCascaderData = formData.nodes[i].cascaderData.find(item => item.value === templateId);
                   if (templateCascaderData && templateCascaderData.children) {
+                    console.log(templateCascaderData.children);
                     selectedNode = templateCascaderData.children.find(child => child.value === nodeId);
+                    console.log(selectedNode);
                     nodeName = selectedNode?.label || '';
+                    nodePattern = selectedNode?.pattern || '';
                   }
                 }
               }
@@ -807,6 +824,7 @@ const WorkflowConfig: React.FC = () => {
               configuredNodes.push({
                 node_id: nodeId,
                 node_name: nodeName,
+                node_pattern: nodePattern,
                 project_key: projectKey,
                 template_id: Number(templateId),
                 template_name: selectedTemplate.name,

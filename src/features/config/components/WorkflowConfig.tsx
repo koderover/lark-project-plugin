@@ -87,9 +87,11 @@ interface ConfigForm {
     cascaderData: Array<{ // 添加级联数据
       label: string;
       value: string;
+      pattern?: string;
       children?: Array<{
         label: string;
         value: string;
+        pattern?: string;
       }>;
       isLeaf?: boolean;
     }>;
@@ -787,7 +789,7 @@ const WorkflowConfig: React.FC = () => {
               const selectedTemplate = formData.workItemTemplates.find(template => template.id.toString() === templateId);
               
               // 查找节点信息
-              let selectedNode: { label: string; value: string; pattern: string } | undefined = undefined;
+              let selectedNode: { label: string; value: string; pattern?: string } | undefined = undefined;
               let nodeName = '';
               let nodePattern = '';
               
@@ -943,6 +945,29 @@ const WorkflowConfig: React.FC = () => {
                   marginBottom: '8px' 
                 }}
               >
+                {/* 流程节点的选项值 */}
+                <span>
+                  {(() => {
+                    // 获取 node pattern
+                    const { selectedCascaderValue, cascaderData } = nodeData;
+                    let pattern = '';
+                    
+                    if (selectedCascaderValue && selectedCascaderValue.length > 0) {
+                      if (selectedCascaderValue.length === 1) {
+                        // 选择了叶子节点（模板本身）
+                        const template = cascaderData.find(item => item.value === selectedCascaderValue[0]);
+                        pattern = template?.pattern || '';
+                      } else if (selectedCascaderValue.length === 2) {
+                        // 选择了具体的子节点
+                        const template = cascaderData.find(item => item.value === selectedCascaderValue[0]);
+                        const node = template?.children?.find(child => child.value === selectedCascaderValue[1]);
+                        pattern = node?.pattern || '';
+                      }
+                    }
+                    
+                    return `Node: ${nodeData.selectedNode}, Pattern: ${pattern}`;
+                  })()}
+                </span>
                 <div style={{ flex: '1', minWidth: '0' }}>
                   <Form.Cascader
                     label="流程/节点"

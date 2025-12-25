@@ -26,7 +26,7 @@ interface WorkflowConfigItem {
   nodes: {
     node_id: string;
     node_name: string;
-    pattern: string;
+    node_pattern: string;
     project_key: string;
     template_id: number;
     template_name: string;
@@ -756,7 +756,7 @@ const WorkflowConfig: React.FC = () => {
             const configuredNodes: {
               node_id: string;
               node_name: string;
-              pattern: string;
+              node_pattern: string;
               project_key: string;
               template_id: number;
               template_name: string;
@@ -826,7 +826,7 @@ const WorkflowConfig: React.FC = () => {
               configuredNodes.push({
                 node_id: nodeId,
                 node_name: nodeName,
-                pattern: nodePattern,
+                node_pattern: nodePattern,
                 project_key: projectKey,
                 template_id: Number(templateId),
                 template_name: selectedTemplate.name,

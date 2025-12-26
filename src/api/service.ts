@@ -75,6 +75,11 @@ export const testAdminConnectionWithCustomAuthAPI = async (authConfig: {
 export const getWorkflowItemTypesAPI = (): Promise<any> =>
   adminRequest.get(`/api/plugin/plugin/lark/workitem/type`);
 
+// 获取工作项详情
+export const getWorkflowItemDetailAPI = (workitemTypeKey: string): Promise<any> =>
+  adminRequest.get(`/api/plugin/plugin/lark/workitem/type/${workitemTypeKey}`);
+
+
 // 获取工作项模板
 export const getWorkflowItemTemplatesAPI = (workitemTypeKey: string): Promise<any> =>
   adminRequest.get(`/api/plugin/plugin/lark/workitem/type/${workitemTypeKey}/template`);

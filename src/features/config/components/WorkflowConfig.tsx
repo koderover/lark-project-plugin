@@ -12,6 +12,7 @@ import {
 import { IconPlus, IconDelete } from '@douyinfe/semi-icons';
 import {
   getWorkflowItemTypesAPI,
+  getWorkflowItemDetailAPI,
   getWorkflowItemTemplatesAPI,
   getWorkflowItemNodesAPI,
   getProjectsAPI,
@@ -75,6 +76,7 @@ interface ConfigForm {
   formApi: any;
   isNew: boolean;
   config: WorkflowConfigItem;
+  flow_mode?: string; // 工作项的流程模式：stateflow 或 nodeflow
   nodes: Array<{
     id: string;
     selectedNode: string;
@@ -170,13 +172,25 @@ const WorkflowConfig: React.FC = () => {
           return;
         }
         
-        // 第一步：并发获取所有需要的工作项模板
+        // 第一步：并发获取所有需要的工作项模板和 flow_mode
         const workItemTypeKeys = [...new Set(configs.map(config => config.work_item_type_key))];
         const templatesPromises = workItemTypeKeys.map(typeKey => 
           fetchWorkItemTemplates(String(typeKey)).then(templates => ({ typeKey, templates }))
         );
-        const templatesResults = await Promise.all(templatesPromises);
+        const flowModePromises = workItemTypeKeys.map(typeKey => 
+          getWorkflowItemDetailAPI(String(typeKey))
+            .then(response => ({ typeKey, flow_mode: response?.flow_mode || 'nodeflow' }))
+            .catch(error => {
+              console.error(`获取工作项 ${typeKey} 详情失败:`, error);
+              return { typeKey, flow_mode: 'nodeflow' };
+            })
+        );
+        const [templatesResults, flowModeResults] = await Promise.all([
+          Promise.all(templatesPromises),
+          Promise.all(flowModePromises)
+        ]);
         const templatesMap = new Map(templatesResults.map(result => [result.typeKey, result.templates]));
+        const flowModeMap = new Map(flowModeResults.map(result => [result.typeKey, result.flow_mode]));
 
         // 第二步：只获取当前配置中实际使用的工作项节点（用于显示已选择的值）
         const nodeRequests = configs.flatMap(config => 
@@ -218,12 +232,14 @@ const WorkflowConfig: React.FC = () => {
         // 第五步：构建表单数据
         const forms = configs.map((config, index) => {
           const templates = templatesMap.get(config.work_item_type_key) || [];
+          const flow_mode = flowModeMap.get(config.work_item_type_key) || 'nodeflow';
           
           return {
             id: Date.now().toString() + Math.random() + '_' + index,
             formApi: null,
             isNew: false,
             config: config,
+            flow_mode: flow_mode,
             nodes: config.nodes.map(node => {
               const nodeKey = `${config.work_item_type_key}_${node.template_id}`;
               const nodeOptions = nodesMap.get(nodeKey) || [];
@@ -488,6 +504,7 @@ const WorkflowConfig: React.FC = () => {
         nodes: [],
         workspace_id: workspaceId
       },
+      flow_mode: 'nodeflow', // 新表单默认为 nodeflow
       nodes: [{
         id: `new_form_${Date.now()}_${Math.random()}`,
         selectedNode: '',
@@ -521,6 +538,19 @@ const WorkflowConfig: React.FC = () => {
     const isChangingExistingType = !currentForm.isNew && currentForm.config.work_item_type_key !== workItemTypeKey;
     
     updatedForms[formIndex].config.work_item_type_key = workItemTypeKey;
+    
+    // 获取工作项的 flow_mode
+    if (workItemTypeKey) {
+      try {
+        const response = await getWorkflowItemDetailAPI(workItemTypeKey);
+        updatedForms[formIndex].flow_mode = response?.flow_mode || 'nodeflow';
+      } catch (error) {
+        console.error('获取工作项详情失败:', error);
+        updatedForms[formIndex].flow_mode = 'nodeflow'; // 使用默认值
+      }
+    } else {
+      updatedForms[formIndex].flow_mode = 'nodeflow';
+    }
 
     if (isChangingExistingType) {
       // 编辑模式下修改工作项类型：清除所有节点，只保留一个空节点
@@ -945,35 +975,12 @@ const WorkflowConfig: React.FC = () => {
                   marginBottom: '8px' 
                 }}
               >
-                {/* 流程节点的选项值 */}
-                <span>
-                  {(() => {
-                    // 获取 node pattern
-                    const { selectedCascaderValue, cascaderData } = nodeData;
-                    let pattern = '';
-                    
-                    if (selectedCascaderValue && selectedCascaderValue.length > 0) {
-                      if (selectedCascaderValue.length === 1) {
-                        // 选择了叶子节点（模板本身）
-                        const template = cascaderData.find(item => item.value === selectedCascaderValue[0]);
-                        pattern = template?.pattern || '';
-                      } else if (selectedCascaderValue.length === 2) {
-                        // 选择了具体的子节点
-                        const template = cascaderData.find(item => item.value === selectedCascaderValue[0]);
-                        const node = template?.children?.find(child => child.value === selectedCascaderValue[1]);
-                        pattern = node?.pattern || '';
-                      }
-                    }
-                    
-                    return `Node: ${nodeData.selectedNode}, Pattern: ${pattern}`;
-                  })()}
-                </span>
                 <div style={{ flex: '1', minWidth: '0' }}>
                   <Form.Cascader
-                    label="流程/节点"
+                    label={formData.flow_mode === 'stateflow' ? '流程/状态' : '流程/节点'}
                     field={`templateNode_${nodeIndex}`}
-                    placeholder="选择流程/节点"
-                    rules={[{ required: true, message: '请选择流程/节点' }]}
+                    placeholder={formData.flow_mode === 'stateflow' ? '选择流程/状态' : '选择流程/节点'}
+                    rules={[{ required: true, message: formData.flow_mode === 'stateflow' ? '请选择流程/状态' : '请选择流程/节点' }]}
                     disabled={!formData.config.work_item_type_key}
                     onChange={(value) => handleCascaderChange(value as string[], formData.id, nodeIndex)}
                     loadData={(selectedOpt) => handleLoadData(selectedOpt, formData.id, nodeIndex)}

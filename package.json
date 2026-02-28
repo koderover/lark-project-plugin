@@ -1,5 +1,5 @@
 {
-  "name": "Zadig DevOps",
+  "name": "zadig-devops-plugin",
   "browserslist": {
     "production": [
       ">0.2%",

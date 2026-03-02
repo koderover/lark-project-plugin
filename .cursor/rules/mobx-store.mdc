@@ -1,0 +1,73 @@
+---
+description: MobX 状态管理规范
+globs: src/stores/**/*.ts
+alwaysApply: false
+---
+
+# MobX Store 规范
+
+## Store 结构
+
+```typescript
+import { makeAutoObservable, runInAction } from 'mobx';
+
+class ExampleStore {
+  // 状态属性
+  data: DataType | null = null;
+  
+  // 缓存标记
+  private dataLoaded = false;
+
+  constructor() {
+    makeAutoObservable(this);
+  }
+
+  // 异步获取方法
+  async getData(): Promise<DataType | null> {
+    if (this.data || this.dataLoaded) {
+      return this.data;
+    }
+
+    try {
+      const result = await fetchData();
+      
+      runInAction(() => {
+        this.data = result;
+        this.dataLoaded = true;
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('Failed to get data:', error);
+      runInAction(() => {
+        this.dataLoaded = true;
+      });
+      return null;
+    }
+  }
+
+  // 设置方法
+  async setData(data: DataType | null): Promise<void> {
+    runInAction(() => {
+      this.data = data;
+      this.dataLoaded = true;
+    });
+
+    // 持久化到存储
+    if (data) {
+      await window.JSSDK.storage.setItem('key', JSON.stringify(data));
+    }
+  }
+}
+
+// 导出单例
+export const exampleStore = new ExampleStore();
+export default exampleStore;
+```
+
+## 要点
+
+- 使用 `makeAutoObservable` 自动追踪
+- 异步操作后用 `runInAction` 更新状态
+- 使用 `window.JSSDK.storage` 持久化数据
+- 实现缓存标记避免重复加载

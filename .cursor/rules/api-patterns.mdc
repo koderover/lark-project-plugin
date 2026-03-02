@@ -1,0 +1,44 @@
+---
+alwaysApply: true
+---
+# API 请求规范
+
+## 请求实例
+
+项目有两种请求实例：
+- `userRequest`: 用户级别请求，需要用户 Token
+- `adminRequest`: 管理员级别请求，使用管理员 Token
+
+## API 函数命名
+
+```typescript
+// ✅ 正确：以 API 后缀命名
+export const getProjectsAPI = (): Promise<any> =>
+  adminRequest.get(`/api/plugin/v1/projects`);
+
+// ✅ 正确：带参数的 API
+export const getWorkItemWorkflowsAPI = (
+  workitemTypeKey: string, 
+  workItemId: string
+): Promise<any> =>
+  userRequest.get(`/api/plugin/plugin/lark/workitem/${workitemTypeKey}/${workItemId}/workflow`);
+```
+
+## 分类注释
+
+API 按功能模块分组，使用中文注释标注：
+
+```typescript
+// ==================== 插件授权配置相关 ====================
+
+// ==================== 插件工作流配置相关 ====================
+
+// ==================== 插件页面相关 ====================
+```
+
+## 认证头
+
+- `Authorization`: Bearer Token
+- `X-PLUGIN-TOKEN`: 插件 Access Token
+- `X-USER-KEY`: 用户密钥
+- `X-WORKSPACE-ID`: 工作空间 ID

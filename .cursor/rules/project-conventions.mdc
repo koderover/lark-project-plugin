@@ -1,0 +1,36 @@
+---
+description: 飞书项目 Zadig DevOps 插件项目规范
+alwaysApply: true
+---
+
+# 项目概述
+
+这是一个飞书项目插件，用于在飞书项目中集成 Zadig DevOps 工作流。
+
+## 技术栈
+
+- **语言**: TypeScript
+- **前端框架**: React 18 (函数式组件 + Hooks)
+- **状态管理**: MobX
+- **UI 组件库**: Semi Design (@douyinfe/semi-ui)
+- **HTTP 客户端**: Axios
+- **飞书 SDK**: @lark-project/js-sdk
+
+## 项目结构
+
+```
+src/
+├── api/          # API 请求层（UserRequest/AdminRequest）
+├── config/       # 配置常量
+├── features/     # 功能模块
+│   ├── config/   # 插件配置页面
+│   └── dashboard/# 工作流仪表盘
+└── stores/       # MobX 状态管理
+```
+
+## 代码风格
+
+- 使用函数式组件，避免 class 组件
+- 使用 async/await 处理异步操作
+- 中文注释和错误提示
+- API 函数以 `API` 后缀命名，如 `getWorkItemWorkflowsAPI`

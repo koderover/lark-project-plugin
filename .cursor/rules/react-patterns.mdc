@@ -1,0 +1,50 @@
+---
+description: React 组件开发规范
+globs: **/*.tsx
+alwaysApply: false
+---
+
+# React 组件规范
+
+## 组件结构
+
+```tsx
+import React, { useState, useEffect, useCallback } from 'react';
+import { Typography, Card, Button, Toast } from '@douyinfe/semi-ui';
+
+interface Props {
+  // 明确定义 props 接口
+}
+
+const ComponentName: React.FC<Props> = (props) => {
+  // 1. 状态声明
+  const [loading, setLoading] = useState(false);
+  
+  // 2. 副作用
+  useEffect(() => {
+    // 初始化逻辑
+  }, []);
+  
+  // 3. 回调函数
+  const handleAction = useCallback(async () => {
+    try {
+      // 业务逻辑
+    } catch (error) {
+      Toast.error('操作失败');
+    }
+  }, []);
+  
+  // 4. 渲染
+  return <div>...</div>;
+};
+
+export default ComponentName;
+```
+
+## 最佳实践
+
+- 使用 Semi Design 组件（Button, Card, Modal, Toast 等）
+- 错误处理使用 `Toast.error()` / `Toast.success()`
+- 加载状态使用 Semi 的 `Spin` 组件
+- 空状态使用 `Empty` + `IllustrationConstruction`
+- 使用 `ErrorBoundary` 包裹复杂组件

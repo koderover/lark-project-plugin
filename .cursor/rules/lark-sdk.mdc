@@ -1,0 +1,51 @@
+---
+description: 飞书项目 SDK 使用规范
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# 飞书项目 SDK 使用
+
+## 全局 JSSDK
+
+通过 `window.JSSDK` 访问飞书项目 SDK：
+
+```typescript
+// 获取上下文
+const context = await window.JSSDK.Context.load();
+const workItemId = context?.activeWorkItem?.id;
+const workspaceId = context?.mainSpace?.id;
+
+// 监听上下文变化
+const watcher = context.watch((ctx) => {
+  // 处理变化
+});
+
+// 获取配置上下文
+const configContext = await window.JSSDK.configuration.getContext();
+const spaceId = configContext.spaceId;
+
+// 获取授权码
+const authResult = await window.JSSDK.utils.getAuthCode();
+const code = authResult.code;
+
+// 存储操作
+await window.JSSDK.storage.setItem('key', 'value');
+const value = await window.JSSDK.storage.getItem('key');
+await window.JSSDK.storage.removeItem('key');
+
+// 打开模态框
+const modal = await window.JSSDK.modal.open({
+  entry: 'ModalEntry',
+  width: '80%',
+  height: 'calc(100vh - 100px)',
+  maskClosable: false,
+  context: { /* 传递数据 */ },
+  onSubmit: (data) => { modal.close(); },
+  afterClose: () => {},
+});
+```
+
+## 类型声明
+
+JSSDK 类型在 `global.d.ts` 中声明，可通过 `window.JSSDK` 全局访问。

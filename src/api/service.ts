@@ -175,7 +175,7 @@ export const getEnvironmentsAPI = (projectName: string): Promise<any> =>
 
 // 获取项目详情
 export const getProjectInfoAPI = (projectName: string): Promise<any> =>
-  userRequest.get(`/api/aslan/project/products/${projectName}?projectName=${projectName}`)
+  userRequest.get(`/api/plugin/aslan/project/products/${projectName}?projectName=${projectName}`)
 
 
 // 获取工作项工作流 Preset
@@ -215,11 +215,23 @@ export const imagesAPI = (projectName: string, payload: any, registry = ''): Pro
 export const previewChangedYamlAPI = (envName: string, serviceName: string, projectName: string, payload: any): Promise<any> =>
   userRequest.post(`/api/plugin/aslan/environment/environments/${envName}/services/${serviceName}/preview?projectName=${projectName}`, payload);
 
-export const getCalculatedValuesYamlAPI = ({ projectName, serviceName, envName, scene, isHelmChartDeploy, updateServiceRevision, format, valueMergeStrategy = 'override' }: any, payload: any): Promise<any> =>
-  userRequest.post(`/api/plugin/aslan/environment/environments/${envName}/estimated-values?projectName=${projectName}&serviceName=${serviceName}&scene=${scene}&isHelmChartDeploy=${isHelmChartDeploy}&updateServiceRevision=${updateServiceRevision}&format=${format}&valueMergeStrategy=${valueMergeStrategy}`, payload);
+export const getCalculatedValuesYamlAPI = (
+  { projectName, serviceName, envName, scene, isHelmChartDeploy, updateServiceRevision, format, valueMergeStrategy = 'override', type = 'values', namespace = '' }: any,
+  payload: any
+): Promise<any> =>
+  userRequest.post(
+    `/api/plugin/aslan/environment/environments/${envName}/estimated-values?projectName=${projectName}&serviceName=${serviceName}&scene=${scene}&isHelmChartDeploy=${isHelmChartDeploy}&updateServiceRevision=${updateServiceRevision}&format=${format}&valueMergeStrategy=${valueMergeStrategy}&type=${type}&namespace=${namespace}`,
+    payload
+  );
 
-export const getProductionCalculatedValuesYamlAPI = ({ projectName, serviceName, envName, scene, isHelmChartDeploy, updateServiceRevision, format, valueMergeStrategy = 'override' }: any, payload: any): Promise<any> =>
-  userRequest.post(`/api/plugin/aslan/environment/environments/${envName}/estimated-values?projectName=${projectName}&serviceName=${serviceName}&scene=${scene}&isHelmChartDeploy=${isHelmChartDeploy}&updateServiceRevision=${updateServiceRevision}&format=${format}&valueMergeStrategy=${valueMergeStrategy}&production=true`, payload);
+export const getProductionCalculatedValuesYamlAPI = (
+  { projectName, serviceName, envName, scene, isHelmChartDeploy, updateServiceRevision, format, valueMergeStrategy = 'override', type = 'values', namespace = '' }: any,
+  payload: any
+): Promise<any> =>
+  userRequest.post(
+    `/api/plugin/aslan/environment/environments/${envName}/estimated-values?projectName=${projectName}&serviceName=${serviceName}&scene=${scene}&isHelmChartDeploy=${isHelmChartDeploy}&updateServiceRevision=${updateServiceRevision}&format=${format}&valueMergeStrategy=${valueMergeStrategy}&type=${type}&namespace=${namespace}&production=true`,
+    payload
+  );
 
 export const mergeImageIntoHelmYamlAPI = (projectName: string, payload: any): Promise<any> =>
   userRequest.post(`/api/plugin/aslan/workflow/v4/deploy/mergeImage?projectName=${projectName}`, payload);

@@ -5,7 +5,7 @@ import { IconRefresh, IconSetting, IconSave } from '@douyinfe/semi-icons';
 import { IllustrationConstruction, IllustrationConstructionDark } from '@douyinfe/semi-illustrations';
 import WorkflowTasksList from './components/WorkflowTasksList';
 import ErrorBoundary from './components/ErrorBoundary';
-import { getWorkItemWorkflowsAPI, getUserKeyAPI, testUserConnectionWithCustomAuthAPI, getCustomCloneDetailAPI } from '../../api/service';
+import { getWorkItemWorkflowsAPI, getUserKeyAPI, testUserConnectionWithCustomAuthAPI, getCustomCloneDetailAPI, getProjectInfoAPI } from '../../api/service';
 import { isLogin } from '../../UserAccessControl';
 import authUtils, { setAuthDataAfterLogin } from '../../api/AuthUtils';
 import { ZADIG_SERVER_URL } from '../../config/constants';
@@ -51,11 +51,40 @@ const App: React.FC = () => {
   const [hasAuthConfig, setHasAuthConfig] = useState(false);
   const [cloneWorkflow, setCloneWorkflow] = useState<any>({});
   const hasAuthConfigRef = useRef(false);
+  const projectDeployTypeCacheRef = useRef<Record<string, 'helm' | 'k8s'>>({});
 
   // 使用 ref 保持最新值
   useEffect(() => {
     hasAuthConfigRef.current = hasAuthConfig;
   }, [hasAuthConfig]);
+
+  const normalizeDeployType = useCallback((value: any): 'helm' | 'k8s' => {
+    const text = String(value || '').toLowerCase();
+    return text.includes('helm') ? 'helm' : 'k8s';
+  }, []);
+
+  const resolveProjectDeployType = useCallback(
+    async (projectName: string): Promise<'helm' | 'k8s'> => {
+      if (!projectName) {
+        return 'k8s';
+      }
+      if (projectDeployTypeCacheRef.current[projectName]) {
+        return projectDeployTypeCacheRef.current[projectName];
+      }
+      try {
+        const projectInfo = await getProjectInfoAPI(projectName);
+        const deployTypeRaw = projectInfo?.product_feature?.deploy_type;
+        const deployType = normalizeDeployType(deployTypeRaw);
+        projectDeployTypeCacheRef.current[projectName] = deployType;
+        return deployType;
+      } catch (error) {
+        console.warn(`[deployType] 获取项目 ${projectName} 的部署类型失败，回退为 k8s`);
+        projectDeployTypeCacheRef.current[projectName] = 'k8s';
+        return 'k8s';
+      }
+    },
+    [normalizeDeployType]
+  );
 
   useEffect(() => {
     checkAuthConfig();
@@ -375,6 +404,8 @@ const App: React.FC = () => {
 
   const handleRunWorkflow = async (workflow: any) => {
     try {
+      const deployType = await resolveProjectDeployType(workflow.project);
+      console.log('deployType', deployType);
       // 获取当前工作项上下文
       const context = await window.JSSDK.Context.load();
       const workItemTypeKey = (context as any)?.activeWorkItem?.workObjectId || '';
@@ -403,6 +434,7 @@ const App: React.FC = () => {
           releasePlanMode: false,
           stageExecMode: false,
           editRunner: false,
+          deployType,
         },
         onSubmit: (data: any) => {
           modal.close();
@@ -438,6 +470,7 @@ const App: React.FC = () => {
       }
 
       const cloneTaskData = await getCustomCloneDetailAPI(task.workflow_name, task.task_id, projectName);
+      const deployType = await resolveProjectDeployType(projectName);
 
       if (cloneTaskData) {
         // 设置克隆的工作流数据（用于 state 管理）
@@ -480,6 +513,7 @@ const App: React.FC = () => {
               releasePlanMode: false,
               stageExecMode: false,
               editRunner: true, // 克隆模式
+              deployType,
             },
             onSubmit: (data: any) => {
               modal.close();

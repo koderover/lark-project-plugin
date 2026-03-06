@@ -48,6 +48,7 @@ export interface CustomWorkflowDeployConfigProps {
   job: Job;
   projectName: string;
   registryId?: string;
+  deployType?: 'helm' | 'k8s';
   viewMode?: boolean;
   editRunner?: boolean;
   stageExecMode?: boolean;

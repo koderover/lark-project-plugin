@@ -123,6 +123,7 @@ interface Job {
 interface ZadigDeployProps {
   job: Job;
   projectName: string;
+  deployType?: 'helm' | 'k8s';
   allJobList?: Job[];
   viewMode?: boolean;
   editRunner?: boolean;
@@ -143,6 +144,7 @@ const ZadigDeploy = forwardRef<ZadigDeployRef, ZadigDeployProps>(
     {
       job,
       projectName,
+      deployType = 'k8s',
       allJobList = [],
       viewMode = false,
       editRunner = false,
@@ -172,7 +174,7 @@ const ZadigDeploy = forwardRef<ZadigDeployRef, ZadigDeployProps>(
     const initRef = useRef<boolean>(false);
 
     // 计算源任务关键数据签名 - 用于精确检测源任务数据变化
-    const sourceJobDataSignature = useMemo(() => {
+    const sourceJobDataSignature = (() => {
       if (job.spec.source !== 'fromjob') return '';
 
       const originJobName = job.spec.origin_job_name || job.spec.job_name || '';
@@ -223,7 +225,7 @@ const ZadigDeploy = forwardRef<ZadigDeployRef, ZadigDeployProps>(
       }
 
       return signature;
-    }, [job.spec.source, job.spec.origin_job_name, job.spec.job_name, allJobList]);
+    })();
 
     // 计算源任务 - 基于数据签名重新计算
     const sourceJob = useMemo(() => {
@@ -275,15 +277,19 @@ const ZadigDeploy = forwardRef<ZadigDeployRef, ZadigDeployProps>(
     }, [job.spec.env, job.spec.env_options]);
 
     const currentEnvServiceModules = useMemo((): ServiceModule[] => {
-      return currentEnvOptions.flatMap((item) =>
-        (item.modules || []).map((module) => ({
-          service_name: item.service_name,
-          service_module: module.service_module,
-          key: `${item.service_name}/${module.service_module}`,
-          source: 'config',
-        }))
-      );
-    }, [currentEnvOptions]);
+      const filterEnvAllServices = job.spec.deploy_contents?.includes('config');
+      return currentEnvOptions
+        .flatMap((item) =>
+          (item.modules || []).map((module) => ({
+            service_name: item.service_name,
+            service_module: module.service_module,
+            key: `${item.service_name}/${module.service_module}`,
+            source: 'config',
+            deployed: item.deployed,
+          }))
+        )
+        .filter((item) => (filterEnvAllServices ? true : item.deployed));
+    }, [currentEnvOptions, job.spec.deploy_contents]);
 
     const registryId = useMemo((): string => {
       const envName = job.spec.env;
@@ -614,6 +620,11 @@ const ZadigDeploy = forwardRef<ZadigDeployRef, ZadigDeployProps>(
     );
 
     const applyVersionImage = useCallback(async () => {
+      if (!versionInfo.id) {
+        Toast.error('请选择版本');
+        return;
+      }
+
       const versionName = versionInfo.versionName;
       const versionServices = versionInfo.services;
       const envServices = cloneDeep(currentEnvOptions);
@@ -899,32 +910,14 @@ const ZadigDeploy = forwardRef<ZadigDeployRef, ZadigDeployProps>(
           if (refJob?.type === 'zadig-build') {
             services = await getPickedTargetsByModules(refJob.spec.service_and_builds || [], currentEnvOptions);
           } else {
-            // 优先使用pickedTargets，如果没有则使用target_services - 这是关键修复
-            const targetSource =
-              sourceJob.pickedTargets && sourceJob.pickedTargets.length > 0
-                ? sourceJob.pickedTargets.map((target) => ({
-                    service_name: target.service_name,
-                    service_module: target.service_module,
-                    key: `${target.service_name}/${target.service_module}`,
-                  }))
-                : sourceJob.spec.target_services || [];
-            services = await getPickedTargetsByModules(targetSource, currentEnvOptions);
+            services = await getPickedTargetsByModules(sourceJob.spec.target_services || [], currentEnvOptions);
           }
         } else if (sourceJob?.type === 'zadig-test') {
           // 构建对服务有范围限制，如果引用类型为构建，则只展示构建的服务，否则展示原始引用的服务
           if (refJob?.type === 'zadig-build') {
             services = await getPickedTargetsByModules(refJob.spec.service_and_builds || [], currentEnvOptions);
           } else {
-            // 优先使用pickedTargets，如果没有则使用target_services
-            const targetSource =
-              sourceJob.pickedTargets && sourceJob.pickedTargets.length > 0
-                ? sourceJob.pickedTargets.map((target) => ({
-                    service_name: target.service_name,
-                    service_module: target.service_module,
-                    key: `${target.service_name}/${target.service_module}`,
-                  }))
-                : sourceJob.spec.target_services || [];
-            services = await getPickedTargetsByModules(targetSource, currentEnvOptions);
+            services = await getPickedTargetsByModules(sourceJob.spec.target_services || [], currentEnvOptions);
           }
         } else if (sourceJob?.type === 'freestyle') {
           if (refJob?.type === 'zadig-build') {
@@ -1002,7 +995,7 @@ const ZadigDeploy = forwardRef<ZadigDeployRef, ZadigDeployProps>(
 
     // 监听环境选项变化
     useEffect(() => {
-      if (initRef.current && job.spec.source === 'runtime' && currentEnvOptions.length > 0) {
+      if (initRef.current && job.spec.source === 'runtime') {
         init();
       }
     }, [currentEnvOptions.length, job.spec.source]);
@@ -1186,6 +1179,7 @@ const ZadigDeploy = forwardRef<ZadigDeployRef, ZadigDeployProps>(
             job={job}
             ref={deployConfigRef}
             projectName={projectName}
+            deployType={deployType}
             registryId={registryId}
             viewMode={viewMode}
             editRunner={editRunner}

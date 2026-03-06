@@ -150,6 +150,7 @@ const WorkflowRunner: React.FC = () => {
   // 从 JSSDK context 获取参数
   const [contextParams, setContextParams] = useState<Record<string, any> | null>(null);
   const [contextLoading, setContextLoading] = useState(true);
+  const deployTypeWarnedRef = useRef(false);
 
   // State variables matching Vue version
   const [startTaskLoading, setStartTaskLoading] = useState(false);
@@ -199,13 +200,18 @@ const WorkflowRunner: React.FC = () => {
   const triggerMode = contextParams?.triggerMode || false;
   const releasePlanMode = contextParams?.releasePlanMode || false;
   const stageExecMode = contextParams?.stageExecMode || false;
-  const sprintCardMode = contextParams?.sprintCardMode || false;
-  const checkedSprintCardIds = contextParams?.checkedSprintCardIds || [];
-  const sprintCardId = contextParams?.sprintCardId || '';
-  const stageExecTaskId = contextParams?.stageExecTaskId || '';
   const editRunner = contextParams?.editRunner || false;
   const webhookSelectedRepo = contextParams?.webhookSelectedRepo || {};
   const approvalTicket = contextParams?.approvalTicket || null;
+  const contextDeployType = contextParams?.deployType;
+  const deployType: 'helm' | 'k8s' = contextDeployType === 'helm' ? 'helm' : 'k8s';
+
+  useEffect(() => {
+    if (!deployTypeWarnedRef.current && contextParams && !contextDeployType) {
+      deployTypeWarnedRef.current = true;
+      console.warn('[deployType] WorkflowRunner 未收到 context.deployType，已回退为 k8s');
+    }
+  }, [contextParams, contextDeployType]);
 
   // Refs for component validation
   const componentRefs = useRef<Record<string, any>>({});
@@ -1149,6 +1155,7 @@ const WorkflowRunner: React.FC = () => {
       approvalTicket,
       triggerMode,
       releasePlanMode,
+      deployType,
       onJobChange: handleJobChange,
     };
 

@@ -1,5 +1,5 @@
-import { useState, forwardRef, useImperativeHandle, useCallback, useEffect, useMemo } from 'react';
-import { Table, Select, Checkbox, Radio, Button, Modal, Input, Switch, Tooltip, TextArea, Typography } from '@douyinfe/semi-ui';
+import { useState, forwardRef, useImperativeHandle, useCallback, useEffect, useMemo, useRef } from 'react';
+import { Table, Select, Checkbox, Radio, Button, Modal, Input, Switch, Tooltip, Typography, Tabs, TabPane, Tag } from '@douyinfe/semi-ui';
 import { IconChevronUp, IconChevronDown, IconArrowUp, IconArrowDown, IconInfoCircle } from '@douyinfe/semi-icons';
 import { 
   imagesAPI, 
@@ -8,6 +8,9 @@ import {
   getProductionCalculatedValuesYamlAPI, 
   mergeImageIntoHelmYamlAPI 
 } from '../../../../api/service';
+import CodeMirror from '@uiw/react-codemirror';
+import { yaml } from '@codemirror/lang-yaml';
+import { copilot } from '@uiw/codemirror-theme-copilot';
 import CodeDiff from '../CodeDiff';
 
 interface ServiceInfo {
@@ -84,6 +87,7 @@ interface CustomWorkflowDeployConfigProps {
   job: Job;
   projectName: string;
   registryId: string;
+  deployType?: 'helm' | 'k8s';
   viewMode?: boolean;
   hideChange?: boolean;
   hideVarPreview?: boolean;
@@ -98,6 +102,7 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
     job,
     projectName,
     registryId,
+    deployType = 'k8s',
     viewMode = false,
     hideChange = false,
     hideVarPreview = false,
@@ -114,6 +119,23 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
     oldString: '',
     newString: ''
   });
+  const [diffTab, setDiffTab] = useState<'values' | 'manifest'>('values');
+  const [manifestDiff, setManifestDiff] = useState<{
+    name: string;
+    oldString: string;
+    newString: string;
+    files: Array<{
+      name: string;
+      oldString: string;
+      newString: string;
+      status: 'added' | 'deleted' | 'modified' | 'unchanged';
+    }>;
+  }>({
+    name: '',
+    oldString: '',
+    newString: '',
+    files: []
+  });
   const [reviewServiceName, setReviewServiceName] = useState('');
   
   // 本地状态管理 pickedTargets，确保组件能正确重新渲染
@@ -125,6 +147,8 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
   // 镜像加载缓存，避免重复请求
   const [imageLoadingCache, setImageLoadingCache] = useState<Set<string>>(new Set());
   const [imageLoadedCache, setImageLoadedCache] = useState<Set<string>>(new Set());
+  const previousPickedModulesLengthRef = useRef<number>(0);
+  const previousTargetModulesSignatureRef = useRef<string>('');
   
   // 同步外部 job.pickedTargets 和本地状态
   useEffect(() => {
@@ -144,25 +168,28 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
     setLocalPickedTargets([...updatedTargets]);
     job.pickedTargets = updatedTargets;
   }, [job]);
+
+  const updatePickedTargetsWith = useCallback((updater: (current: ServiceInfo[]) => ServiceInfo[]) => {
+    setLocalPickedTargets((currentTargets) => {
+      const updatedTargets = updater(currentTargets);
+      job.pickedTargets = updatedTargets;
+      return updatedTargets;
+    });
+  }, [job]);
   
   const { Text } = Typography;
   
-  // 计算部署类型（从store或项目信息获取）
-  const deployType = 'k8s' as 'helm' | 'k8s'; // 写死为k8s类型
   const production = job.spec.production;
   const envName = job.spec.env;
 
   // 展开/收起函数
   const expand = useCallback((item: ServiceInfo, isExpand: boolean) => {
     if (item) {
-      const updatedTargets = localPickedTargets.map(target => 
-        target.service_name === item.service_name 
-          ? { ...target, isExpand }
-          : target
+      updatePickedTargetsWith((currentTargets) =>
+        currentTargets.map((target) => (target.service_name === item.service_name ? { ...target, isExpand } : target))
       );
-      updatePickedTargets(updatedTargets);
     }
-  }, [localPickedTargets, updatePickedTargets]);
+  }, [updatePickedTargetsWith]);
 
   // 获取镜像列表
   const getImages = useCallback((name: string, id: string) => {
@@ -172,49 +199,48 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
 
   // 过滤镜像
   const filterMethod = useCallback((value: string, targetModule: ModuleInfo) => {
-    // 深拷贝更新，确保 React 能检测到变化
-    const updatedTargets = localPickedTargets.map(target => ({
-      ...target,
-      modules: target.modules?.map(module => {
-        if (module.service_module === targetModule.service_module) {
-          const newModule = { ...module };
-          if (value !== '') {
-            newModule.image = value;
-            newModule.filterImages = value 
-              ? (module.images || []).filter((image: any) => image.tag.indexOf(value) > -1)
-              : module.images || [];
-          } else {
-            // 重新初始化镜像数据
-            if (!newModule.image) {
-              newModule.filterImages = newModule.images || [];
+    // 使用最新状态计算，避免 onChange 后 dropdown 关闭事件拿到旧闭包导致镜像值回退
+    setLocalPickedTargets((currentTargets) => {
+      const updatedTargets = currentTargets.map((target) => ({
+        ...target,
+        modules: target.modules?.map((module) => {
+          if (module.service_module === targetModule.service_module) {
+            const newModule = { ...module };
+            if (value !== '') {
+              newModule.image = value;
+              newModule.filterImages = value ? (module.images || []).filter((image: any) => image.tag.indexOf(value) > -1) : module.images || [];
             } else {
-              const images = newModule.images || [];
-              newModule.filterImages = JSON.parse(JSON.stringify(images));
-              let matchedImage: any = {};
-              const filterImages = newModule.filterImages || [];
-              for (let i = 0; i < filterImages.length; i++) {
-                const element = filterImages[i];
-                const tag = element.owner 
-                  ? `${element.host}/${element.owner}/${element.name}:${element.tag}`
-                  : `${element.host}/${element.name}:${element.tag}`;
-                if (tag === newModule.image) {
-                  matchedImage = element;
-                  filterImages.splice(i, 1);
-                  break;
+              // 重新初始化镜像数据
+              if (!newModule.image) {
+                newModule.filterImages = newModule.images || [];
+              } else {
+                const images = newModule.images || [];
+                newModule.filterImages = JSON.parse(JSON.stringify(images));
+                let matchedImage: any = {};
+                const filterImages = newModule.filterImages || [];
+                for (let i = 0; i < filterImages.length; i++) {
+                  const element = filterImages[i];
+                  const tag = element.owner ? `${element.host}/${element.owner}/${element.name}:${element.tag}` : `${element.host}/${element.name}:${element.tag}`;
+                  if (tag === newModule.image) {
+                    matchedImage = element;
+                    filterImages.splice(i, 1);
+                    break;
+                  }
+                }
+                if (matchedImage.tag && newModule.filterImages) {
+                  newModule.filterImages.unshift(matchedImage);
                 }
               }
-              if (matchedImage.tag && newModule.filterImages) {
-                newModule.filterImages.unshift(matchedImage);
-              }
             }
+            return newModule;
           }
-          return newModule;
-        }
-        return module;
-      })
-    }));
-    updatePickedTargets(updatedTargets);
-  }, [localPickedTargets, updatePickedTargets]);
+          return module;
+        }),
+      }));
+      job.pickedTargets = updatedTargets;
+      return updatedTargets;
+    });
+  }, [job]);
 
   // 检查请求状态
   const checkRequestStatus = useCallback(() => {
@@ -377,25 +403,26 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
     const sourceYaml = updateConfig ? latestVariableYaml : variableYaml;
     
     if (job.spec.deploy_contents?.includes('image') || job.spec.deploy_contents?.includes('vars')) {
-      const updatedTargets = localPickedTargets.map(target => {
-        if (target.service_name === item.service_name) {
-          const updatedTarget = { ...target };
-          if (item.value_merge_strategy === 'reuse-values') {
-            updatedTarget.variable_yaml = '';
-          } else if (item.value_merge_strategy === 'override') {
-            updatedTarget.variable_yaml = sourceYaml;
+      updatePickedTargetsWith((currentTargets) =>
+        currentTargets.map((target) => {
+          if (target.service_name === item.service_name) {
+            const updatedTarget = { ...target };
+            if (item.value_merge_strategy === 'reuse-values') {
+              updatedTarget.variable_yaml = '';
+            } else if (item.value_merge_strategy === 'override') {
+              updatedTarget.variable_yaml = sourceYaml;
+            }
+            return updatedTarget;
           }
-          return updatedTarget;
-        }
-        return target;
-      });
-      updatePickedTargets(updatedTargets);
+          return target;
+        })
+      );
       
       if (job.spec.source === 'runtime') {
         mergeImageIntoHelmYamlInit(item);
       }
     }
-  }, [job, localPickedTargets, updatePickedTargets]);
+  }, [job, updatePickedTargetsWith]);
 
   // 初始化合并镜像到Helm YAML
   const mergeImageIntoHelmYamlInit = useCallback(async (service: ServiceInfo) => {
@@ -415,18 +442,15 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
       try {
         const res = await mergeImageIntoHelmYamlAPI(projectName, payload);
         if (res) {
-          const updatedTargets = localPickedTargets.map(target => 
-            target.service_name === service.service_name 
-              ? { ...target, variable_yaml: res.values }
-              : target
+          updatePickedTargetsWith((currentTargets) =>
+            currentTargets.map((target) => (target.service_name === service.service_name ? { ...target, variable_yaml: res.values } : target))
           );
-          updatePickedTargets(updatedTargets);
         }
       } catch (error) {
         console.error('合并镜像到Helm YAML失败:', error);
       }
     }
-  }, [deployType, job, projectName, localPickedTargets, updatePickedTargets]);
+  }, [deployType, job, projectName, updatePickedTargetsWith]);
 
   // 合并镜像到Helm YAML
   const mergeImageIntoHelmYaml = useCallback(async (service: ServiceInfo, image: string) => {
@@ -446,18 +470,15 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
       try {
         const res = await mergeImageIntoHelmYamlAPI(projectName, payload);
         if (res) {
-          const updatedTargets = localPickedTargets.map(target => 
-            target.service_name === service.service_name 
-              ? { ...target, variable_yaml: res.values }
-              : target
+          updatePickedTargetsWith((currentTargets) =>
+            currentTargets.map((target) => (target.service_name === service.service_name ? { ...target, variable_yaml: res.values } : target))
           );
-          updatePickedTargets(updatedTargets);
         }
       } catch (error) {
         console.error('合并镜像到Helm YAML失败:', error);
       }
     }
-  }, [deployType, job, projectName, localPickedTargets, updatePickedTargets]);
+  }, [deployType, job, projectName, updatePickedTargetsWith]);
 
   // 处理输入事件（用于手动输入的情况）
   const handleImageInput = useCallback((item: ServiceInfo, value: string) => {
@@ -658,7 +679,8 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
             scene: item.deployed ? 'update_service' : 'create_service',
             format: 'flat_map',
             updateServiceRevision: updateServiceRevision,
-            valueMergeStrategy: item.value_merge_strategy
+            valueMergeStrategy: item.value_merge_strategy,
+            type: 'manifest'
           };
           
           const payload = {
@@ -673,7 +695,8 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
             setFileDiffDialogTitle(`${serviceName} 更新后的 values 文件和当前环境中的 values 文件比对`);
             setReviewServiceName(serviceName);
             const { current, latest } = res;
-            openUpdateServiceDialog({ yaml: current }, { yaml: latest });
+            const files = mergeManifests(res.current_manifest_files || [], res.latest_manifest_files || []);
+            openUpdateServiceDialog({ yaml: current || '' }, { yaml: latest || '' }, files);
           } catch (error) {
             console.error(error);
           }
@@ -709,28 +732,103 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
     }
   }, [deployType, envName, production, projectName, job]);
 
-  // 打开更新服务对话框
-  const openUpdateServiceDialog = useCallback((current: any, latest: any) => {
-    current.yaml = current.yaml || '';
-    setYamlDiff({
-      oldString: current.yaml,
-      newString: latest.yaml
+  const mergeManifests = useCallback((current: any[], latest: any[]) => {
+    const currentMap = new Map(current.map((item) => [item.source, item.content]));
+    const latestMap = new Map(latest.map((item) => [item.source, item.content]));
+    const result: Array<{ name: string; oldString: string; newString: string; status: 'added' | 'deleted' | 'modified' | 'unchanged' }> = [];
+
+    latest.forEach((item) => {
+      const currentContent = currentMap.get(item.source);
+      let status: 'added' | 'deleted' | 'modified' | 'unchanged' = 'unchanged';
+      if (typeof currentContent === 'undefined') {
+        status = 'added';
+      } else if (currentContent !== item.content) {
+        status = 'modified';
+      }
+      result.push({
+        name: item.source,
+        oldString: currentContent || '',
+        newString: item.content || '',
+        status,
+      });
     });
-    setFileDiffDialogVisible(true);
+
+    current.forEach((item) => {
+      if (!latestMap.has(item.source)) {
+        result.push({
+          name: item.source,
+          oldString: item.content || '',
+          newString: '',
+          status: 'deleted',
+        });
+      }
+    });
+
+    return result;
   }, []);
+
+  const changeManifestFile = useCallback((name: string) => {
+    setManifestDiff((prev) => {
+      const file = prev.files.find((item) => item.name === name);
+      if (!file) {
+        return prev;
+      }
+      return {
+        ...prev,
+        name,
+        oldString: file.oldString,
+        newString: file.newString,
+      };
+    });
+  }, []);
+
+  // 打开更新服务对话框
+  const openUpdateServiceDialog = useCallback(
+    (
+      current: any,
+      latest: any,
+      files: Array<{ name: string; oldString: string; newString: string; status: 'added' | 'deleted' | 'modified' | 'unchanged' }> = []
+    ) => {
+      current.yaml = current.yaml || '';
+      setYamlDiff({
+        oldString: current.yaml,
+        newString: latest.yaml
+      });
+      if (files.length > 0) {
+        setManifestDiff({
+          name: files[0].name,
+          oldString: files[0].oldString,
+          newString: files[0].newString,
+          files,
+        });
+      } else {
+        setManifestDiff({
+          name: '',
+          oldString: '',
+          newString: '',
+          files: [],
+        });
+      }
+      setDiffTab('values');
+      setFileDiffDialogVisible(true);
+    },
+    []
+  );
 
   // 改变服务排序
   const changeServiceSort = useCallback((position: string, index: number) => {
-    const newTargets = [...localPickedTargets];
-    if (position === 'up') {
-      if (index === 0) return;
-      newTargets.splice(index - 1, 0, newTargets.splice(index, 1)[0]);
-    } else {
-      if (index === newTargets.length - 1) return;
-      newTargets.splice(index + 1, 0, newTargets.splice(index, 1)[0]);
-    }
-    updatePickedTargets(newTargets);
-  }, [localPickedTargets, updatePickedTargets]);
+    updatePickedTargetsWith((currentTargets) => {
+      const newTargets = [...currentTargets];
+      if (position === 'up') {
+        if (index === 0) return currentTargets;
+        newTargets.splice(index - 1, 0, newTargets.splice(index, 1)[0]);
+      } else {
+        if (index === newTargets.length - 1) return currentTargets;
+        newTargets.splice(index + 1, 0, newTargets.splice(index, 1)[0]);
+      }
+      return newTargets;
+    });
+  }, [updatePickedTargetsWith]);
 
 
   // 避免循环调用的智能检查
@@ -763,6 +861,26 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
     }
   }, [job.spec.source, localPickedTargets, hasUnfetchedModules, lastHandleServicesCall]);
 
+  // 对齐 Vue watch：监听 pickedModules 与 pickedTargets 的结构变化触发初始化
+  useEffect(() => {
+    if (job.spec.source !== 'runtime') {
+      return;
+    }
+    const pickedTargets = job.pickedTargets || [];
+    const pickedModulesLength = (job.pickedModules || []).length;
+    const targetModulesSignature = pickedTargets.map((target) => `${target.service_name}:${target.modules?.length || 0}`).join('|');
+
+    const shouldHandle =
+      previousPickedModulesLengthRef.current !== pickedModulesLength || previousTargetModulesSignatureRef.current !== targetModulesSignature;
+
+    if (shouldHandle) {
+      handleServices(pickedTargets);
+    }
+
+    previousPickedModulesLengthRef.current = pickedModulesLength;
+    previousTargetModulesSignatureRef.current = targetModulesSignature;
+  }, [job.spec.source, job.pickedModules, job.pickedTargets, handleServices]);
+
   useImperativeHandle(ref, () => ({
     validate: () => true,
     checkRequestStatus,
@@ -789,7 +907,7 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
             {job.spec.deploy_contents?.includes('vars') && (
               <div style={{ width: '50px' }}>&nbsp;</div>
             )}
-            <div style={{ flex: '0 0 180px' }}>服务名称</div>
+            <div style={{ flex: '0 0 180px' }}>{deployType === 'helm' ? '服务名称(Release)' : '服务名称'}</div>
             {job.spec.deploy_contents?.includes('image') && (
               <div style={{ flex: '0 0 180px' }}>服务组件</div>
             )}
@@ -803,10 +921,10 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
               <div style={{ flex: '0 0 200px' }}>
                 <span>部署策略</span>
                 <Tooltip content={
-                  <div>
-                    <span>合并策略</span>
+                  <div style={{ fontSize: '12px' }}>
+                    <span>合并：与当前环境变量合并，Helm CLI --reuse-values 选项</span>
                     <br/>
-                    <span>覆盖策略</span>
+                    <span>覆盖：使用输入变量覆盖</span>
                   </div>
                 }>
                   <IconInfoCircle style={{ color: 'rgb(96, 98, 102)', cursor: 'pointer', marginLeft: 4 }} />
@@ -829,7 +947,12 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                 {/* 展开/收起 */}
                 {job.spec.deploy_contents?.includes('vars') && (
                   <div style={{ width: '50px', display: 'flex', alignItems: 'center' }}>
-                    {item.variable_kvs && item.variable_kvs.filter(v => v.source !== 'other' && !v.use_global_variable).length > 0 && (
+                    {(() => {
+                      const hasVisibleVars =
+                        (item.variable_kvs || []).filter((v) => v.source !== 'other' && !v.use_global_variable).length > 0;
+                      const helmCanExpand = deployType === 'helm';
+                      return hasVisibleVars || helmCanExpand;
+                    })() && (
                       <Button
                         theme="borderless"
                         size="default"
@@ -842,7 +965,24 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
 
                 {/* 服务名称 */}
                 <div style={{ flex: '0 0 180px' }}>
-                  <Text>{item.service_name}</Text>
+                  {deployType === 'helm' ? (
+                    <div>
+                      <Text>{item.service_name}</Text>
+                      <span style={{ color: '#999', marginLeft: 4 }}>
+                        ({item.update_config ? item.latest_release_name || item.current_release_name : item.current_release_name || '-'})
+                      </span>
+                      {item.update_config &&
+                        item.latest_release_name &&
+                        item.current_release_name &&
+                        item.latest_release_name !== item.current_release_name && (
+                          <Tooltip content="当前环境的 release 与最新 release 不一致，请确认部署影响">
+                            <IconInfoCircle style={{ color: '#f90', cursor: 'pointer', marginLeft: 4 }} />
+                          </Tooltip>
+                        )}
+                    </div>
+                  ) : (
+                    <Text>{item.service_name}</Text>
+                  )}
                 </div>
 
                 {/* 服务组件和镜像版本 */}
@@ -872,21 +1012,19 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                                     key={`${item.service_name}-${module.service_module}-${module.fetched}-${module.filterImages?.length || 0}-${forceRenderKey}`}
                                     value={module.image}
                                     onChange={(value) => {
-                                      // 深拷贝更新，确保 React 能检测到变化
-                                      const updatedTargets = localPickedTargets.map(target => {
-                                        if (target.service_name === item.service_name) {
-                                          return {
-                                            ...target,
-                                            modules: target.modules?.map(mod => 
-                                              mod.service_module === module.service_module 
-                                                ? { ...mod, image: value as string }
-                                                : mod
-                                            )
-                                          };
-                                        }
-                                        return target;
-                                      });
-                                      updatePickedTargets(updatedTargets);
+                                      updatePickedTargetsWith((currentTargets) =>
+                                        currentTargets.map((target) => {
+                                          if (target.service_name === item.service_name) {
+                                            return {
+                                              ...target,
+                                              modules: target.modules?.map((mod) =>
+                                                mod.service_module === module.service_module ? { ...mod, image: value as string } : mod
+                                              ),
+                                            };
+                                          }
+                                          return target;
+                                        })
+                                      );
                                       handleImageInput(item, value as string);
                                     }}
                                     onSearch={(value) => filterMethod(value, module)}
@@ -896,8 +1034,9 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                                     style={{ width: '300px', minWidth: 200 }}
                                     size="default"
                                     showClear
+                                    virtualize={{ itemSize: 32, height: 260 }}
                                     optionList={(() => {
-                                      const options = (module.filterImages || []).slice(0, 50).map((img: any) => ({
+                                      const options = (module.filterImages || []).map((img: any) => ({
                                         label: img.tag,
                                         value: img.owner 
                                           ? `${img.host}/${img.owner}/${img.name}:${img.tag}`
@@ -905,6 +1044,11 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                                       }));
                                       return options;
                                     })()}
+                                    onDropdownVisibleChange={(visible) => {
+                                      if (!visible) {
+                                        filterMethod('', module);
+                                      }
+                                    }}
                                     onFocus={() => {
                                       const moduleKey = `${item.service_name}-${module.service_module}-${module.image_name}`;
                                       
@@ -913,15 +1057,14 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                                         setImageLoadingCache(prev => new Set([...prev, moduleKey]));
                                         
                                         // 先设置 loading 状态
-                                        const loadingTargets = localPickedTargets.map(target => ({
-                                          ...target,
-                                          modules: target.modules?.map(mod => 
-                                            mod.service_module === module.service_module 
-                                              ? { ...mod, loading: true }
-                                              : mod
-                                          )
-                                        }));
-                                        updatePickedTargets(loadingTargets);
+                                        updatePickedTargetsWith((currentTargets) =>
+                                          currentTargets.map((target) => ({
+                                            ...target,
+                                            modules: target.modules?.map((mod) =>
+                                              mod.service_module === module.service_module ? { ...mod, loading: true } : mod
+                                            ),
+                                          }))
+                                        );
                                         
                                         getImages(module.image_name || '', registryId).then((res) => {
                                           // 标记为已加载
@@ -1021,13 +1164,11 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                           <Checkbox
                             checked={item.update_config}
                             onChange={(e) => {
-                              // 深拷贝更新，确保 React 能检测到变化
-                              const updatedTargets = localPickedTargets.map(target => 
-                                target.service_name === item.service_name 
-                                  ? { ...target, update_config: e.target.checked }
-                                  : target
+                              updatePickedTargetsWith((currentTargets) =>
+                                currentTargets.map((target) =>
+                                  target.service_name === item.service_name ? { ...target, update_config: e.target.checked } : target
+                                )
                               );
-                              updatePickedTargets(updatedTargets);
                             }}
                             disabled={viewMode}
                           >
@@ -1041,13 +1182,11 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                           <Checkbox
                             checked={item.update_config}
                             onChange={(e) => {
-                              // 深拷贝更新，确保 React 能检测到变化
-                              const updatedTargets = localPickedTargets.map(target => 
-                                target.service_name === item.service_name 
-                                  ? { ...target, update_config: e.target.checked }
-                                  : target
+                              updatePickedTargetsWith((currentTargets) =>
+                                currentTargets.map((target) =>
+                                  target.service_name === item.service_name ? { ...target, update_config: e.target.checked } : target
+                                )
                               );
-                              updatePickedTargets(updatedTargets);
                               getVariables([item]);
                             }}
                             disabled={viewMode}
@@ -1061,13 +1200,11 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                                 <Checkbox
                                   checked={item.update_config}
                                   onChange={(e) => {
-                                    // 深拷贝更新，确保 React 能检测到变化
-                                    const updatedTargets = localPickedTargets.map(target => 
-                                      target.service_name === item.service_name 
-                                        ? { ...target, update_config: e.target.checked }
-                                        : target
+                                    updatePickedTargetsWith((currentTargets) =>
+                                      currentTargets.map((target) =>
+                                        target.service_name === item.service_name ? { ...target, update_config: e.target.checked } : target
+                                      )
                                     );
-                                    updatePickedTargets(updatedTargets);
                                     getVariables([item]);
                                   }}
                                   disabled={viewMode}
@@ -1098,22 +1235,20 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                       <Radio.Group
                         value={item.value_merge_strategy}
                         onChange={(e) => {
-                          // 深拷贝更新，确保 React 能检测到变化
-                          const updatedTargets = localPickedTargets.map(target => 
-                            target.service_name === item.service_name 
-                              ? { ...target, value_merge_strategy: e.target.value }
-                              : target
+                          updatePickedTargetsWith((currentTargets) =>
+                            currentTargets.map((target) =>
+                              target.service_name === item.service_name ? { ...target, value_merge_strategy: e.target.value } : target
+                            )
                           );
-                          updatePickedTargets(updatedTargets);
                           mergeStrategyChange(item);
                         }}
-                        direction="vertical"
+                        direction="horizontal"
                         disabled={viewMode}
                       >
                         <Radio value="reuse-values">
                           <Text>合并</Text>
                           {item.auto_sync && (
-                            <Tooltip content="合并策略警告">
+                            <Tooltip content="当前服务已开启自动同步功能，系统将采用「覆盖」策略进行部署。">
                               <IconInfoCircle style={{ color: 'rgb(96, 98, 102)', cursor: 'pointer', marginLeft: 4 }} />
                             </Tooltip>
                           )}
@@ -1146,13 +1281,13 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                   {!viewMode && (
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       {index !== 0 && (
-                        <IconArrowUp 
+                        <IconArrowDown 
                           style={{ color: '#1C7CDB', fontSize: 16, cursor: 'pointer' }}
                           onClick={() => changeServiceSort('up', index)}
                         />
                       )}
                       {index !== localPickedTargets.length - 1 && (
-                        <IconArrowDown 
+                        <IconArrowUp 
                           style={{ color: '#1C7CDB', fontSize: 16, cursor: 'pointer' }}
                           onClick={() => changeServiceSort('down', index)}
                         />
@@ -1168,29 +1303,38 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                   {deployType === 'helm' ? (
                     <div style={{
                       width: '100%',
-                      height: '300px',
+                      minHeight: '100px',
                       marginBottom: '10px',
-                      border: '1px solid #ccc',
+                      border: '1px solid #d9d9d9',
                       borderRadius: '4px',
-                      padding: 8,
+                      padding: 0,
                       backgroundColor: '#f8fcfd'
                     }}>
-                      <Text strong>{item.service_name} 的 Helm Values</Text>
-                      <TextArea
-                        value={item.variable_yaml}
-                        onChange={(val) => {
-                          // 深拷贝更新，确保 React 能检测到变化
-                          const updatedTargets = localPickedTargets.map(target => 
-                            target.service_name === item.service_name 
-                              ? { ...target, variable_yaml: val }
-                              : target
-                          );
-                          updatePickedTargets(updatedTargets);
-                        }}
-                        disabled={viewMode || item.auto_sync}
-                        rows={12}
-                        style={{ width: '100%', fontFamily: 'monospace', marginTop: 8 }}
-                      />
+                      <div style={{
+                        maxHeight: '60vh',
+                        borderRadius: 4,
+                        overflow: 'auto'
+                      }}>
+                        <CodeMirror
+                          value={item.variable_yaml || ''}
+                          onChange={(value) => {
+                            updatePickedTargetsWith((currentTargets) =>
+                              currentTargets.map((target) =>
+                                target.service_name === item.service_name ? { ...target, variable_yaml: value } : target
+                              )
+                            );
+                          }}
+                          extensions={[yaml()]}
+                          theme={copilot}
+                          readOnly={viewMode || item.auto_sync}
+                          basicSetup={{
+                            lineNumbers: true,
+                            foldGutter: true,
+                            highlightActiveLine: false,
+                          }}
+                          style={{ height: 'auto', fontSize: '12px' }}
+                        />
+                      </div>
                     </div>
                   ) : (
                     <Table
@@ -1224,21 +1368,19 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                                 size="default"
                                 value={record.value as string}
                                 onChange={(val) => {
-                                  // 深拷贝更新，确保 React 能检测到变化
-                                  const updatedTargets = localPickedTargets.map(target => {
-                                    if (target.service_name === item.service_name) {
-                                      return {
-                                        ...target,
-                                        variable_kvs: target.variable_kvs?.map(variable => 
-                                          variable.key === record.key 
-                                            ? { ...variable, value: val }
-                                            : variable
-                                        )
-                                      };
-                                    }
-                                    return target;
-                                  });
-                                  updatePickedTargets(updatedTargets);
+                                  updatePickedTargetsWith((currentTargets) =>
+                                    currentTargets.map((target) => {
+                                      if (target.service_name === item.service_name) {
+                                        return {
+                                          ...target,
+                                          variable_kvs: target.variable_kvs?.map((variable) =>
+                                            variable.key === record.key ? { ...variable, value: val } : variable
+                                          ),
+                                        };
+                                      }
+                                      return target;
+                                    })
+                                  );
                                 }}
                                 disabled={viewMode}
                               />
@@ -1248,21 +1390,19 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                               <Select
                                 value={record.value as string}
                                 onChange={(val) => {
-                                  // 深拷贝更新，确保 React 能检测到变化
-                                  const updatedTargets = localPickedTargets.map(target => {
-                                    if (target.service_name === item.service_name) {
-                                      return {
-                                        ...target,
-                                        variable_kvs: target.variable_kvs?.map(variable => 
-                                          variable.key === record.key 
-                                            ? { ...variable, value: val as string }
-                                            : variable
-                                        )
-                                      };
-                                    }
-                                    return target;
-                                  });
-                                  updatePickedTargets(updatedTargets);
+                                  updatePickedTargetsWith((currentTargets) =>
+                                    currentTargets.map((target) => {
+                                      if (target.service_name === item.service_name) {
+                                        return {
+                                          ...target,
+                                          variable_kvs: target.variable_kvs?.map((variable) =>
+                                            variable.key === record.key ? { ...variable, value: val as string } : variable
+                                          ),
+                                        };
+                                      }
+                                      return target;
+                                    })
+                                  );
                                 }}
                                 size="default"
                                 disabled={viewMode}
@@ -1278,50 +1418,54 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
                               <Switch
                                 checked={record.value as boolean}
                                 onChange={(checked) => {
-                                  // 深拷贝更新，确保 React 能检测到变化
-                                  const updatedTargets = localPickedTargets.map(target => {
-                                    if (target.service_name === item.service_name) {
-                                      return {
-                                        ...target,
-                                        variable_kvs: target.variable_kvs?.map(variable => 
-                                          variable.key === record.key 
-                                            ? { ...variable, value: checked }
-                                            : variable
-                                        )
-                                      };
-                                    }
-                                    return target;
-                                  });
-                                  updatePickedTargets(updatedTargets);
+                                  updatePickedTargetsWith((currentTargets) =>
+                                    currentTargets.map((target) => {
+                                      if (target.service_name === item.service_name) {
+                                        return {
+                                          ...target,
+                                          variable_kvs: target.variable_kvs?.map((variable) =>
+                                            variable.key === record.key ? { ...variable, value: checked } : variable
+                                          ),
+                                        };
+                                      }
+                                      return target;
+                                    })
+                                  );
                                 }}
                                 disabled={viewMode}
                               />
                             );
                           } else if (record.type === 'yaml') {
                             return (
-                              <TextArea
-                                value={record.value as string}
-                                onChange={(val) => {
-                                  // 深拷贝更新，确保 React 能检测到变化
-                                  const updatedTargets = localPickedTargets.map(target => {
-                                    if (target.service_name === item.service_name) {
-                                      return {
-                                        ...target,
-                                        variable_kvs: target.variable_kvs?.map(variable => 
-                                          variable.key === record.key 
-                                            ? { ...variable, value: val }
-                                            : variable
-                                        )
-                                      };
-                                    }
-                                    return target;
-                                  });
-                                  updatePickedTargets(updatedTargets);
-                                }}
-                                disabled={viewMode}
-                                rows={4}
-                                style={{ width: '100%', fontFamily: 'monospace' }}
-                              />
+                              <div style={{ border: '1px solid #ccc', borderRadius: 4, overflow: 'hidden' }}>
+                                <CodeMirror
+                                  value={(record.value as string) || ''}
+                                  onChange={(value) => {
+                                    updatePickedTargetsWith((currentTargets) =>
+                                      currentTargets.map((target) => {
+                                        if (target.service_name === item.service_name) {
+                                          return {
+                                            ...target,
+                                            variable_kvs: target.variable_kvs?.map((variable) =>
+                                              variable.key === record.key ? { ...variable, value } : variable
+                                            ),
+                                          };
+                                        }
+                                        return target;
+                                      })
+                                    );
+                                  }}
+                                  extensions={[yaml()]}
+                                  theme={copilot}
+                                  readOnly={viewMode}
+                                  basicSetup={{
+                                    lineNumbers: true,
+                                    foldGutter: true,
+                                    highlightActiveLine: false,
+                                  }}
+                                  style={{ fontSize: '12px' }}
+                                />
+                              </div>
                             );
                           }
                           return record.value;
@@ -1352,20 +1496,56 @@ const CustomWorkflowDeployConfig = forwardRef<any, CustomWorkflowDeployConfigPro
         bodyStyle={{ padding: '16px', height: 'calc(80vh - 120px)', overflow: 'hidden' }}
       >
         <div className="diff-container" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          {deployType === 'helm' && job.spec.source !== 'runtime' && (
-            <div style={{ color: '#999', marginBottom: 10, flexShrink: 0 }}>
-              来自任务 {reviewServiceName} 的差异对比
+          {deployType === 'helm' ? (
+            <Tabs activeKey={diffTab} onChange={(key) => setDiffTab(key as 'values' | 'manifest')} keepDOM={false}>
+              <TabPane tab="Values" itemKey="values">
+                {job.spec.source !== 'runtime' && (
+                  <div style={{ color: '#999', marginBottom: 10, flexShrink: 0 }}>
+                    来自任务 {reviewServiceName} 的差异对比
+                  </div>
+                )}
+                <div className="diff-content" style={{ height: 'calc(80vh - 220px)', minHeight: 300 }}>
+                  <CodeDiff oldString={yamlDiff.oldString} newString={yamlDiff.newString} language="yaml" outputFormat="side-by-side" context={10} />
+                </div>
+              </TabPane>
+              <TabPane tab="Manifests" itemKey="manifest">
+                <div style={{ marginBottom: 10 }}>
+                  <Select
+                    value={manifestDiff.name}
+                    placeholder="请选择文件"
+                    onChange={(value) => changeManifestFile(value as string)}
+                    style={{ width: '100%' }}
+                    filter
+                    optionList={manifestDiff.files.map((item) => ({
+                      label: (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span>{item.name}</span>
+                          {item.status === 'added' && <Tag color="green" size="small">新增</Tag>}
+                          {item.status === 'deleted' && <Tag color="red" size="small">删除</Tag>}
+                          {item.status === 'modified' && <Tag color="orange" size="small">修改</Tag>}
+                          {item.status === 'unchanged' && <Tag color="grey" size="small">无变更</Tag>}
+                        </div>
+                      ),
+                      value: item.name,
+                    }))}
+                  />
+                </div>
+                <div className="diff-content" style={{ height: 'calc(80vh - 260px)', minHeight: 260 }}>
+                  <CodeDiff
+                    oldString={manifestDiff.oldString}
+                    newString={manifestDiff.newString}
+                    language="yaml"
+                    outputFormat="side-by-side"
+                    context={10}
+                  />
+                </div>
+              </TabPane>
+            </Tabs>
+          ) : (
+            <div className="diff-content" style={{ flex: 1, minHeight: 0 }}>
+              <CodeDiff oldString={yamlDiff.oldString} newString={yamlDiff.newString} language="yaml" outputFormat="side-by-side" context={10} />
             </div>
           )}
-          <div className="diff-content" style={{ flex: 1, minHeight: 0 }}>
-            <CodeDiff
-              oldString={yamlDiff.oldString}
-              newString={yamlDiff.newString}
-              language="yaml"
-              outputFormat="side-by-side"
-              context={10}
-            />
-          </div>
         </div>
       </Modal>
     </div>

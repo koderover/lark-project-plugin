@@ -1108,7 +1108,11 @@ const ZadigDeploy = forwardRef<ZadigDeployRef, ZadigDeployProps>(
                 changeServiceModule(selectedModules);
               }}
               multiple
-              filter
+              filter={(sugInput, option) => {
+                const val = String(option?.value || '');
+                const input = sugInput.toLowerCase();
+                return val.toLowerCase().includes(input);
+              }}
               showClear
               placeholder="请选择服务组件"
               style={{ width: '100%' }}

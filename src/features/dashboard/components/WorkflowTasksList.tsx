@@ -40,6 +40,7 @@ interface TaskItem {
   repos: RepoInfo[]; // 代码仓库信息数组
   service_modules: ServiceModule[]; // 服务模块数组
   deploy_envs: DeployEnv[]; // 部署环境数组
+  images?: string[]; // 镜像信息数组
 }
 
 interface WorkflowTasksListProps {
@@ -524,6 +525,41 @@ const WorkflowTasksList = forwardRef<WorkflowTasksListRef, WorkflowTasksListProp
     );
   };
 
+  // 渲染镜像信息列表
+  const renderImages = (images?: string[]) => {
+    if (!images || images.length === 0) {
+      return <Text type="tertiary">-</Text>;
+    }
+
+    return (
+      <div style={{ maxHeight: '120px', overflowY: 'auto' }}>
+        {images.map((image, index) => {
+          const tag = image.includes(':') ? image.split(':').pop() : image;
+          return (
+            <div key={index} style={{ marginBottom: '2px' }}>
+              <Tooltip content={image}>
+                <Text
+                  ellipsis={{ showTooltip: false }}
+                  style={{
+                    fontSize: '13px',
+                    display: 'block',
+                    maxWidth: '200px',
+                    cursor: 'default',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {tag}
+                </Text>
+              </Tooltip>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   // 渲染代码仓库详情（适配最新API）
   const renderRepoInfo = (repos?: RepoInfo[]) => {
     if (!repos || repos.length === 0) {
@@ -583,7 +619,7 @@ const WorkflowTasksList = forwardRef<WorkflowTasksListRef, WorkflowTasksListProp
       title: '运行状态',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
+      width: 90,
       render: (status: string, record: TaskItem) => getStatusTag(status, record.reverted),
     });
 
@@ -606,7 +642,7 @@ const WorkflowTasksList = forwardRef<WorkflowTasksListRef, WorkflowTasksListProp
     columns.push({
       title: '执行人',
       key: 'executor',
-      width: 120,
+      width: 100,
       render: (_: any, record: TaskItem) => (
         <div>
           <Text style={{ fontSize: '13px' }}>{record.task_creator || '-'}</Text>
@@ -622,7 +658,7 @@ const WorkflowTasksList = forwardRef<WorkflowTasksListRef, WorkflowTasksListProp
       title: '分支信息',
       key: 'branch',
       minWidth: 100,
-      width: 200,
+      width: 160,
       render: (_: any, record: TaskItem) => renderRepoInfo(record.repos),
     });
 
@@ -634,7 +670,15 @@ const WorkflowTasksList = forwardRef<WorkflowTasksListRef, WorkflowTasksListProp
       render: (_: any, record: TaskItem) => renderServiceModules(record.service_modules),
     });
 
-    // 7. 部署环境列（必须显示）
+    // 7. 镜像信息列
+    columns.push({
+      title: '镜像信息',
+      key: 'images',
+      width: 240,
+      render: (_: any, record: TaskItem) => renderImages(record.images),
+    });
+
+    // 8. 部署环境列（必须显示）
     columns.push({
       title: '部署环境',
       key: 'deploy_envs',
@@ -642,7 +686,7 @@ const WorkflowTasksList = forwardRef<WorkflowTasksListRef, WorkflowTasksListProp
       render: (_: any, record: TaskItem) => renderDeployEnvs(record.deploy_envs),
     });
 
-    // 8. 操作列（必须显示）
+    // 9. 操作列（必须显示）
     columns.push({
       title: '操作',
       key: 'action',

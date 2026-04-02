@@ -690,7 +690,7 @@ const WorkflowTasksList = forwardRef<WorkflowTasksListRef, WorkflowTasksListProp
     columns.push({
       title: '操作',
       key: 'action',
-      width: 90,
+      width: 80,
       fixed: 'right',
       render: (_: any, record: TaskItem) => {
         const isDisabled = disabledRun || (workflowHash && workflowHash !== record.hash);
@@ -759,22 +759,7 @@ const WorkflowTasksList = forwardRef<WorkflowTasksListRef, WorkflowTasksListProp
           rowKey="task_id"
           pagination={false}
           size="small"
-          onRow={(record) => ({
-            onClick: async () => {
-              // 使用新的URL生成规则
-              const url = await generateTaskDetailUrl(
-                record?.task_id || 0,
-                record?.status || '',
-                workflowName || workflow.name,
-                displayName || workflow.display_name || '',
-                projectKey || ''
-              );
-              if (url) {
-                window.JSSDK?.navigation?.open(url);
-              }
-            },
-            style: { cursor: 'pointer' }
-          })}
+          bordered={false}
         />
       </div>
     </div>

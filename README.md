@@ -170,7 +170,7 @@ export const ZADIG_SERVER_URL = '替换为你的实际 Zadig 地址';
 // 管理员认证配置
 export const ADMIN_AUTH_CONFIG = {
   url: ZADIG_SERVER_URL,
-  apiToken: '替换为你的插件管理员 Token'
+  apiToken: '替换为 Zadig 系统管理员 Token'
 };
 
 ```
